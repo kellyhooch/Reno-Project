@@ -173,8 +173,9 @@ Your response must strictly conform to the expected JSON schema. Do not include 
   }
 });
 
-// --- COMMENTS & DISCUSSION DATABASE (SERVER-PERSISTED) ---
+// --- COMMENTS & DISCUSSION DATABASE (SERVER-PERSISTED & SUPABASE EXTENDED) ---
 import fs from 'fs';
+import { createClient } from '@supabase/supabase-js';
 
 const COMMENTS_FILE = path.join(process.cwd(), 'comments.json');
 
@@ -217,6 +218,109 @@ const DEFAULT_COMMENTS = [
   }
 ];
 
+// Supabase Connection initialization
+const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || '';
+const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('http'));
+
+const supabase = isSupabaseConfigured ? createClient(supabaseUrl, supabaseAnonKey) : null;
+let isCommentsTableReady = false;
+
+// Pull live comments from Supabase if active
+async function syncCommentsFromSupabase() {
+  if (supabase && isCommentsTableReady) {
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .select('*');
+      
+      if (!error && Array.isArray(data)) {
+        // Map fields to standard interface
+        const parsed = data.map((item: any) => ({
+          id: String(item.id),
+          name: item.name || 'Singapore Renovator',
+          role: item.role || '🏡 Homeowner',
+          text: item.text || '',
+          likes: Number(item.likes || 0),
+          timestamp: item.timestamp || 'Just now',
+          replies: Array.isArray(item.replies) ? item.replies : []
+        }));
+
+        // Sort comments: newer or custom IDs first
+        parsed.sort((a, b) => {
+          // Attempt parsing timestamps or use basic string/id descending sorting
+          return b.id.localeCompare(a.id);
+        });
+
+        if (parsed.length > 0) {
+          memoryComments = parsed;
+        }
+      }
+    } catch (err: any) {
+      console.warn("Failed to fetch comments from Supabase:", err.message);
+    }
+  }
+}
+
+// Push/Upsert a comment to Supabase if active
+async function saveCommentToSupabase(comment: any) {
+  if (supabase && isCommentsTableReady) {
+    try {
+      const { error } = await supabase.from('comments').upsert({
+        id: comment.id,
+        name: comment.name,
+        role: comment.role,
+        text: comment.text,
+        likes: comment.likes || 0,
+        replies: comment.replies || [],
+        timestamp: comment.timestamp
+      });
+      if (error) {
+        console.error("Supabase comments upsert error:", error.message);
+      }
+    } catch (err: any) {
+      console.error("Supabase comments upsert critical error:", err.message);
+    }
+  }
+}
+
+// Initializer to check/verify Supabase tables exist
+async function initSupabaseComments() {
+  if (!supabase) {
+    console.log("Supabase is not configured yet. Falling back to local/memory comments.");
+    return;
+  }
+  try {
+    const { error } = await supabase.from('comments').select('id').limit(1);
+    if (!error) {
+      isCommentsTableReady = true;
+      console.log("Supabase 'comments' table is live and listening!");
+      
+      // Auto seed if database is empty on start
+      const { data, error: countErr } = await supabase.from('comments').select('id');
+      if (!countErr && (!data || data.length === 0)) {
+        console.log("Supabase comments table is empty. Seeding DEFAULT_COMMENTS...");
+        for (const item of DEFAULT_COMMENTS) {
+          await supabase.from('comments').insert({
+            id: item.id,
+            name: item.name,
+            role: item.role,
+            text: item.text,
+            likes: item.likes,
+            timestamp: item.timestamp,
+            replies: item.replies
+          });
+        }
+      }
+      await syncCommentsFromSupabase();
+    } else {
+      console.log("Supabase 'comments' table not found on database. Sync will fall back to local/memory comments until the table is created in Supabase Dashboard.");
+    }
+  } catch (err: any) {
+    console.warn("Error testing Supabase database tables configuration on boot:", err.message);
+  }
+}
+
 function readComments(): any[] {
   return memoryComments;
 }
@@ -254,14 +358,17 @@ try {
   memoryComments = JSON.parse(JSON.stringify(DEFAULT_COMMENTS));
 }
 
-// Get all comments
-app.get('/api/comments', (req, res) => {
+// Get all comments with live sync
+app.get('/api/comments', async (req, res) => {
+  try {
+    await syncCommentsFromSupabase();
+  } catch (err) {}
   const comments = readComments();
   res.json({ success: true, comments });
 });
 
 // Add a comment
-app.post('/api/comments', (req, res) => {
+app.post('/api/comments', async (req, res) => {
   try {
     const { name, role, text } = req.body;
     if (!text || !text.trim()) {
@@ -279,6 +386,10 @@ app.post('/api/comments', (req, res) => {
     };
     comments.unshift(newComment);
     writeComments(comments);
+    
+    // Fire-and-forget background sync to Supabase if active
+    saveCommentToSupabase(newComment);
+
     res.json({ success: true, comment: newComment, comments });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
@@ -286,7 +397,7 @@ app.post('/api/comments', (req, res) => {
 });
 
 // Add a reply
-app.post('/api/comments/:id/reply', (req, res) => {
+app.post('/api/comments/:id/reply', async (req, res) => {
   try {
     const { id } = req.params;
     const { name, role, text } = req.body;
@@ -310,6 +421,10 @@ app.post('/api/comments/:id/reply', (req, res) => {
     }
     comments[commentIndex].replies.push(newReply);
     writeComments(comments);
+
+    // Fire-and-forget background sync to Supabase if active
+    saveCommentToSupabase(comments[commentIndex]);
+
     res.json({ success: true, reply: newReply, comments });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
@@ -317,7 +432,7 @@ app.post('/api/comments/:id/reply', (req, res) => {
 });
 
 // Like a comment
-app.post('/api/comments/:id/like', (req, res) => {
+app.post('/api/comments/:id/like', async (req, res) => {
   try {
     const { id } = req.params;
     const comments = readComments();
@@ -327,6 +442,10 @@ app.post('/api/comments/:id/like', (req, res) => {
     }
     comments[commentIndex].likes = (comments[commentIndex].likes || 0) + 1;
     writeComments(comments);
+
+    // Fire-and-forget background sync to Supabase if active
+    saveCommentToSupabase(comments[commentIndex]);
+
     res.json({ success: true, likes: comments[commentIndex].likes, comments });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
@@ -335,6 +454,9 @@ app.post('/api/comments/:id/like', (req, res) => {
 
 // Setup development dev-server or Serve static production assets
 async function serveApp() {
+  // Sync comments table on startup
+  await initSupabaseComments();
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },

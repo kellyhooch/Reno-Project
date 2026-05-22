@@ -99,6 +99,47 @@ const getPropertyLabel = (type: string) => {
   }
 };
 
+// Helper to merge server responses with locally written comments (prevent vanishing under multi-container stateless setups)
+function mergeComments(serverComments: any[], userOwnComments: any[]) {
+  const map = new Map<string, any>();
+  
+  // 1. Core seed from Server
+  (serverComments || []).forEach(c => {
+    if (c && c.id) {
+      map.set(String(c.id), { ...c, replies: Array.isArray(c.replies) ? c.replies : [] });
+    }
+  });
+
+  // 2. Overlay client's own cached writes (local offline/sync layer)
+  (userOwnComments || []).forEach(c => {
+    if (!c || !c.id) return;
+    const cid = String(c.id);
+    if (!map.has(cid)) {
+      map.set(cid, { ...c, replies: Array.isArray(c.replies) ? c.replies : [] });
+    } else {
+      const serverC = map.get(cid);
+      const mergedReplies = [...(serverC.replies || [])];
+      
+      (c.replies || []).forEach((r: any) => {
+        if (r && r.id && !mergedReplies.some((sr: any) => String(sr.id) === String(r.id))) {
+          mergedReplies.push(r);
+        }
+      });
+
+      map.set(cid, {
+        ...serverC,
+        likes: Math.max(Number(serverC.likes || 0), Number(c.likes || 0)),
+        replies: mergedReplies
+      });
+    }
+  });
+
+  const result = Array.from(map.values());
+  // Sort descending by id
+  result.sort((a, b) => b.id.localeCompare(a.id));
+  return result;
+}
+
 export default function App() {
   // Navigation & Step Wizard State
   // 1: Landing/Discovery, 2: Select/Upload, 3: Constraints, 4: Results Comparison, 5: Detail review
@@ -108,13 +149,27 @@ export default function App() {
   const [forumMode, setForumMode] = useState<'interactive' | 'disqus'>('interactive');
   const [localComments, setLocalComments] = useState<any[]>(() => {
     const saved = localStorage.getItem('sg_reno_planner_comments');
+    const savedOwn = localStorage.getItem('sg_reno_planner_own_comments');
+    
+    let serverList: any[] = [];
+    let ownList: any[] = [];
+
     if (saved) {
       try {
-        return JSON.parse(saved);
-      } catch (e) {
-        // Fallback
-      }
+        serverList = JSON.parse(saved);
+      } catch (e) {}
     }
+    if (savedOwn) {
+      try {
+        ownList = JSON.parse(savedOwn);
+      } catch (e) {}
+    }
+
+    if (serverList.length > 0 || ownList.length > 0) {
+      return mergeComments(serverList, ownList);
+    }
+
+    // Default seed
     return [
       {
         id: "comment-1",
@@ -162,16 +217,22 @@ export default function App() {
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.comments) {
-            setLocalComments(data.comments);
-            localStorage.setItem('sg_reno_planner_comments', JSON.stringify(data.comments));
+            const savedOwn = localStorage.getItem('sg_reno_planner_own_comments');
+            let ownList: any[] = [];
+            if (savedOwn) {
+              try { ownList = JSON.parse(savedOwn); } catch (e) {}
+            }
+            const merged = mergeComments(data.comments, ownList);
+            setLocalComments(merged);
+            localStorage.setItem('sg_reno_planner_comments', JSON.stringify(merged));
           }
         }
       } catch (err) {
-        console.warn("Failed to fetch server comments, using local storage:", err);
+        console.warn("Failed to fetch server comments, using local storage fallback:", err);
       }
     };
     fetchComments();
-    const interval = setInterval(fetchComments, 8000);
+    const interval = setInterval(fetchComments, 6000);
     return () => clearInterval(interval);
   }, []);
 
@@ -189,7 +250,7 @@ export default function App() {
     const originalText = newCommentText.trim();
 
     // Optimistic UI update
-    const tempId = `comment-temp-${Date.now()}`;
+    const tempId = `comment-temp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     const newCommentObj = {
       id: tempId,
       name: authorName,
@@ -200,7 +261,16 @@ export default function App() {
       replies: []
     };
 
-    setLocalComments(prev => [newCommentObj, ...prev]);
+    // Save to local own-list write-cache immediately to prevent it disappearing under stateless nodes
+    const savedOwn = localStorage.getItem('sg_reno_planner_own_comments');
+    let ownList: any[] = [];
+    if (savedOwn) {
+      try { ownList = JSON.parse(savedOwn); } catch (e) {}
+    }
+    ownList.push(newCommentObj);
+    localStorage.setItem('sg_reno_planner_own_comments', JSON.stringify(ownList));
+
+    setLocalComments(prev => mergeComments([newCommentObj, ...prev], ownList));
     setNewCommentText('');
     setNewCommentName('');
 
@@ -217,8 +287,9 @@ export default function App() {
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.comments) {
-          setLocalComments(data.comments);
-          localStorage.setItem('sg_reno_planner_comments', JSON.stringify(data.comments));
+          const merged = mergeComments(data.comments, ownList);
+          setLocalComments(merged);
+          localStorage.setItem('sg_reno_planner_comments', JSON.stringify(merged));
         }
       }
     } catch (err) {
@@ -237,6 +308,20 @@ export default function App() {
       prev.map(c => c.id === commentId ? { ...c, likes: (c.likes || 0) + 1 } : c)
     );
 
+    // Persist likes custom state in local write-cache as option
+    const savedOwn = localStorage.getItem('sg_reno_planner_own_comments');
+    let ownList: any[] = [];
+    if (savedOwn) {
+      try { ownList = JSON.parse(savedOwn); } catch (e) {}
+    }
+    const idx = ownList.findIndex((lc: any) => String(lc.id) === String(commentId));
+    if (idx !== -1) {
+      ownList[idx].likes = (ownList[idx].likes || 0) + 1;
+    } else {
+      ownList.push({ id: commentId, likes: 1, replies: [] });
+    }
+    localStorage.setItem('sg_reno_planner_own_comments', JSON.stringify(ownList));
+
     try {
       const response = await fetch(`/api/comments/${commentId}/like`, {
         method: 'POST'
@@ -244,8 +329,9 @@ export default function App() {
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.comments) {
-          setLocalComments(data.comments);
-          localStorage.setItem('sg_reno_planner_comments', JSON.stringify(data.comments));
+          const merged = mergeComments(data.comments, ownList);
+          setLocalComments(merged);
+          localStorage.setItem('sg_reno_planner_comments', JSON.stringify(merged));
         }
       }
     } catch (err) {
@@ -261,16 +347,31 @@ export default function App() {
 
     // Optimistic UI update
     const newReply = {
-      id: `reply-temp-${Date.now()}`,
+      id: `reply-temp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       name: authorName,
       role: newCommentRole,
       text: originalReplyText,
       timestamp: 'Just now'
     };
 
+    // Save reply to the local own-list write-cache
+    const savedOwn = localStorage.getItem('sg_reno_planner_own_comments');
+    let ownList: any[] = [];
+    if (savedOwn) {
+      try { ownList = JSON.parse(savedOwn); } catch (e) {}
+    }
+    const idx = ownList.findIndex((lc: any) => String(lc.id) === String(commentId));
+    if (idx !== -1) {
+      if (!Array.isArray(ownList[idx].replies)) ownList[idx].replies = [];
+      ownList[idx].replies.push(newReply);
+    } else {
+      ownList.push({ id: commentId, likes: 0, replies: [newReply] });
+    }
+    localStorage.setItem('sg_reno_planner_own_comments', JSON.stringify(ownList));
+
     setLocalComments(prev => 
       prev.map(c => {
-        if (c.id === commentId) {
+        if (String(c.id) === String(commentId)) {
           return {
             ...c,
             replies: [...(c.replies || []), newReply]
@@ -295,8 +396,9 @@ export default function App() {
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.comments) {
-          setLocalComments(data.comments);
-          localStorage.setItem('sg_reno_planner_comments', JSON.stringify(data.comments));
+          const merged = mergeComments(data.comments, ownList);
+          setLocalComments(merged);
+          localStorage.setItem('sg_reno_planner_comments', JSON.stringify(merged));
         }
       }
     } catch (err) {

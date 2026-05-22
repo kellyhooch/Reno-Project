@@ -29,7 +29,11 @@ import {
   FileText,
   BookmarkCheck,
   ChevronLeft,
-  Download
+  Download,
+  MessageSquare,
+  Send,
+  ThumbsUp,
+  Globe
 } from 'lucide-react';
 
 import { PRESET_PLANS } from './presets';
@@ -99,6 +103,210 @@ export default function App() {
   // Navigation & Step Wizard State
   // 1: Landing/Discovery, 2: Select/Upload, 3: Constraints, 4: Results Comparison, 5: Detail review
   const [currentStep, setCurrentStep] = useState<number>(1);
+
+  // Disqus vs Interactive Comment Board State
+  const [forumMode, setForumMode] = useState<'interactive' | 'disqus'>('interactive');
+  const [localComments, setLocalComments] = useState<any[]>(() => {
+    const saved = localStorage.getItem('sg_reno_planner_comments');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        // Fallback
+      }
+    }
+    return [
+      {
+        id: "comment-1",
+        name: "Kelvin Tan",
+        role: "🎨 Interior Designer",
+        text: "The HDB 4-room smart layout options are extremely solid! I highly recommend toggling on the cross-ventilation option here if you want to keep cooking smells out of the living area.",
+        likes: 14,
+        timestamp: "2 hours ago",
+        replies: [
+          {
+            id: "reply-1",
+            name: "Alex Goh",
+            role: "🏡 Homeowner",
+            text: "This saved me! Our kitchen doesn't face standard layout ventilation and this gave us the idea to use standard ceiling extraction ducts.",
+            timestamp: "1 hour ago"
+          }
+        ]
+      },
+      {
+        id: "comment-2",
+        name: "Evelyn Lim",
+        role: "🏡 Homeowner",
+        text: "Loved the 3-room mockup preview! We managed to maximize our study corner by following the template's compact sliding doors advice. Fits our hybrid work schedules perfectly without sacrificing general space.",
+        likes: 9,
+        timestamp: "4 hours ago",
+        replies: []
+      },
+      {
+        id: "comment-3",
+        name: "Marcus Goh",
+        role: "🛠️ Contractor",
+        text: "Remember to coordinate dry/wet plumbing limits before choosing open kitchen options! Some HDB layouts require custom pipe relocations which might stretch your renovation budget.",
+        likes: 11,
+        timestamp: "1 day ago",
+        replies: []
+      }
+    ];
+  });
+
+  // Fetch comments from server on mount & interval
+  useEffect(() => {
+    const fetchComments = async () => {
+      try {
+        const response = await fetch('/api/comments');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.comments) {
+            setLocalComments(data.comments);
+            localStorage.setItem('sg_reno_planner_comments', JSON.stringify(data.comments));
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to fetch server comments, using local storage:", err);
+      }
+    };
+    fetchComments();
+    const interval = setInterval(fetchComments, 8000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const [newCommentName, setNewCommentName] = useState('');
+  const [newCommentRole, setNewCommentRole] = useState('🏡 Homeowner');
+  const [newCommentText, setNewCommentText] = useState('');
+  const [replyingToId, setReplyingToId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
+
+  // Forum helper handlers
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCommentText.trim()) return;
+    const authorName = newCommentName.trim() || 'Singapore Renovator';
+    const originalText = newCommentText.trim();
+
+    // Optimistic UI update
+    const tempId = `comment-temp-${Date.now()}`;
+    const newCommentObj = {
+      id: tempId,
+      name: authorName,
+      role: newCommentRole,
+      text: originalText,
+      likes: 0,
+      timestamp: 'Just now',
+      replies: []
+    };
+
+    setLocalComments(prev => [newCommentObj, ...prev]);
+    setNewCommentText('');
+    setNewCommentName('');
+
+    try {
+      const response = await fetch('/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: authorName,
+          role: newCommentRole,
+          text: originalText
+        })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.comments) {
+          setLocalComments(data.comments);
+          localStorage.setItem('sg_reno_planner_comments', JSON.stringify(data.comments));
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to post comment to server:", err);
+    }
+  };
+
+  const handleOpenReply = (commentId: string) => {
+    setReplyingToId(prev => prev === commentId ? null : commentId);
+    setReplyText('');
+  };
+
+  const handleLikeComment = async (commentId: string) => {
+    // Optimistic UI update
+    setLocalComments(prev => 
+      prev.map(c => c.id === commentId ? { ...c, likes: (c.likes || 0) + 1 } : c)
+    );
+
+    try {
+      const response = await fetch(`/api/comments/${commentId}/like`, {
+        method: 'POST'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.comments) {
+          setLocalComments(data.comments);
+          localStorage.setItem('sg_reno_planner_comments', JSON.stringify(data.comments));
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to like comment on server:", err);
+    }
+  };
+
+  const handleAddReply = async (commentId: string, e: React.FormEvent) => {
+    e.preventDefault();
+    if (!replyText.trim()) return;
+    const authorName = newCommentName.trim() || 'Singapore Renovator';
+    const originalReplyText = replyText.trim();
+
+    // Optimistic UI update
+    const newReply = {
+      id: `reply-temp-${Date.now()}`,
+      name: authorName,
+      role: newCommentRole,
+      text: originalReplyText,
+      timestamp: 'Just now'
+    };
+
+    setLocalComments(prev => 
+      prev.map(c => {
+        if (c.id === commentId) {
+          return {
+            ...c,
+            replies: [...(c.replies || []), newReply]
+          };
+        }
+        return c;
+      })
+    );
+    setReplyText('');
+    setReplyingToId(null);
+
+    try {
+      const response = await fetch(`/api/comments/${commentId}/reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: authorName,
+          role: newCommentRole,
+          text: originalReplyText
+        })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.comments) {
+          setLocalComments(data.comments);
+          localStorage.setItem('sg_reno_planner_comments', JSON.stringify(data.comments));
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to send reply to server:", err);
+    }
+  };
+
+  const handleQuickSuggestion = (text: string) => {
+    setNewCommentText(text);
+  };
   
   // Property and upload configuration
   const [selectedPresetId, setSelectedPresetId] = useState<string>('hdb-4-room');
@@ -2534,34 +2742,293 @@ Licensed building and design specifications ready for local contractor execution
         </div>
       )}
 
-      {/* Disqus Interactive Community Board */}
+      {/* Disqus & Local Hybrid Interactive Community Board */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 mb-6" id="disqus-forum-section">
         <div className="bg-white rounded-2xl border border-stone-200 p-6 sm:p-8 shadow-sm">
-          <div className="flex items-center gap-2 mb-6 border-b border-stone-100 pb-4">
-            <div className="bg-blue-50 text-blue-800 p-2 rounded-xl">
-              <Users className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-display font-dark text-stone-900 text-sm sm:text-base font-bold">
-                Community Discussion Board & Feedback Forum
-              </h3>
-              <p className="text-[10px] sm:text-xs text-stone-500">
-                Share your design layout ideas, ask questions, or exchange ideas with fellow homeowners.
-              </p>
-            </div>
-          </div>
           
-          <div className="min-h-[250px]">
-            <SafeDiscussionEmbed
-              shortname="reno-project-kel"
-              config={{
-                url: typeof window !== 'undefined' ? window.location.href : 'https://sg-renoplanner.co',
-                identifier: 'sg-renoplanner-forum-main',
-                title: 'Singapore Home Renovation Planner - General Discussion Board',
-                language: 'zh_TW'
-              }}
-            />
+          {/* Header with Mode Toggle tabs */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-stone-100 pb-5">
+            <div className="flex items-center gap-2.5">
+              <div className="bg-blue-50 text-blue-800 p-2.5 rounded-xl">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-display font-bold text-stone-900 text-sm sm:text-base">
+                  Community Discussion & Feedback
+                </h3>
+                <p className="text-[10px] sm:text-xs text-stone-500">
+                  Exchange layout blueprints, plumbing ideas, and budget optimization hacks with others.
+                </p>
+              </div>
+            </div>
+
+            {/* Toggle tabs designed beautifully */}
+            <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl self-start md:self-auto text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => setForumMode('interactive')}
+                className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+                  forumMode === 'interactive'
+                    ? 'bg-white text-blue-900 shadow-sm border border-stone-200'
+                    : 'text-stone-500 hover:text-stone-800'
+                }`}
+                id="toggle-local-chat"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></div>
+                <span>💬 Live Web Chat (Instant)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setForumMode('disqus')}
+                className={`px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all cursor-pointer ${
+                  forumMode === 'disqus'
+                    ? 'bg-white text-blue-900 shadow-sm border border-stone-200'
+                    : 'text-stone-500 hover:text-stone-850'
+                }`}
+                id="toggle-disqus-embed"
+              >
+                <Globe className="w-3 h-3 text-stone-500" />
+                <span>🌐 Disqus Widget</span>
+              </button>
+            </div>
           </div>
+
+          {/* Interactive Live Comment Board */}
+          {forumMode === 'interactive' && (
+            <div className="space-y-6">
+              {/* Alert Note about sandbox typing limitations */}
+              <div className="bg-blue-50/70 border border-blue-100 text-blue-900 text-[10px] sm:text-xs p-3.5 rounded-xl leading-relaxed flex items-start gap-2.5">
+                <Sparkles className="w-4 h-4 text-blue-700 shrink-0 mt-0.5 animate-pulse" />
+                <div>
+                  <span className="font-bold">Sandbox Protected Mode Active:</span> This integrated Singapore live chat is 100% interactive and immune to browser cookie blockers. Type your renovation ideas, choose your profile level, and post comments or replies instantly!
+                </div>
+              </div>
+
+              {/* Comment submission form */}
+              <form onSubmit={handleAddComment} className="bg-stone-50/80 p-4 sm:p-5 rounded-xl border border-stone-100 space-y-3.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-mono uppercase font-bold text-stone-500">Your Full Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Ken Tan"
+                      value={newCommentName}
+                      onChange={(e) => setNewCommentName(e.target.value)}
+                      className="w-full text-xs p-2.5 border border-stone-200 bg-white rounded-lg focus:outline-none focus:border-blue-800"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-mono uppercase font-bold text-stone-500">Your Profile / Role</label>
+                    <select
+                      value={newCommentRole}
+                      onChange={(e) => setNewCommentRole(e.target.value)}
+                      className="w-full text-xs p-2.5 border border-stone-200 bg-white rounded-lg focus:outline-none focus:border-blue-800 cursor-pointer text-stone-700"
+                    >
+                      <option value="🏡 Homeowner">🏡 Homeowner</option>
+                      <option value="🎨 Interior Designer">🎨 Interior Designer</option>
+                      <option value="🛠️ Contractor">🛠️ Contractor</option>
+                      <option value="📋 Architect">📋 Architect</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-mono uppercase font-bold text-stone-500">Add Your Comment / Idea</label>
+                  <textarea
+                    placeholder="Type your comment, query, or idea about the 2D/3D Singapore flat layouts..."
+                    rows={3}
+                    value={newCommentText}
+                    onChange={(e) => setNewCommentText(e.target.value)}
+                    required
+                    className="w-full text-xs p-3 border border-stone-200 bg-white rounded-lg focus:outline-none focus:border-blue-800 leading-normal resize-none"
+                  />
+                </div>
+
+                {/* Quick Comment Helper presets */}
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <span className="text-[9px] font-mono text-stone-400 mr-1 uppercase">Quick topics:</span>
+                  {[
+                    "🇸🇬 Truly optimized for standard Singapore flats!",
+                    "💡 Excellent study corner layouts.",
+                    "💸 Recommending layout design for HDB flats.",
+                    "🔨 Great material safety tips!"
+                  ].map((presetText) => (
+                    <button
+                      key={presetText}
+                      type="button"
+                      onClick={() => handleQuickSuggestion(presetText)}
+                      className="text-[9px] sm:text-[10px] bg-white border border-stone-200 text-stone-600 hover:border-blue-600 hover:text-blue-900 px-2.5 py-1 rounded-full cursor-pointer transition-all active:scale-95 shadow-2xs"
+                    >
+                      {presetText}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="submit"
+                    className="bg-blue-800 hover:bg-blue-900 text-white text-xs font-bold px-5 py-2.5 rounded-lg cursor-pointer transition-colors flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Send className="w-3 h-3" />
+                    <span>Post Comment</span>
+                  </button>
+                </div>
+              </form>
+
+              {/* Comments Thread list */}
+              <div className="space-y-4 pt-2">
+                <h4 className="text-[11px] font-mono uppercase font-bold text-stone-500 tracking-wider">
+                  Discussion Thread Feed ({localComments.length} entries)
+                </h4>
+
+                <div className="divide-y divide-stone-100">
+                  {localComments.map((comment: any) => (
+                    <div key={comment.id} className="py-4 space-y-3">
+                      
+                      {/* Comment Meta row */}
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2.5">
+                          {/* Round Avatar initials badge */}
+                          <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-xs">
+                            {comment.name.substring(0, 1).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-xs text-stone-900 leading-none">
+                                {comment.name}
+                              </span>
+                              <span className="text-[10px] font-medium bg-stone-100 text-stone-700 px-2 py-0.5 rounded-md border border-stone-250">
+                                {comment.role}
+                              </span>
+                            </div>
+                            <span className="text-[9px] text-stone-400 block mt-1 font-mono">
+                              {comment.timestamp}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Likes action */}
+                        <button
+                          type="button"
+                          onClick={() => handleLikeComment(comment.id)}
+                          className="flex items-center gap-1 text-[10px] text-stone-500 hover:text-blue-800 bg-stone-50 border border-stone-200 hover:border-blue-200 px-2 py-1 rounded-md cursor-pointer transition-all"
+                        >
+                          <ThumbsUp className="w-3 h-3 text-stone-400" />
+                          <span>{comment.likes}</span>
+                        </button>
+                      </div>
+
+                      {/* Comment text body */}
+                      <p className="text-xs text-stone-700 leading-relaxed pl-10 animate-fade-in">
+                        {comment.text}
+                      </p>
+
+                      {/* Reply visual toggle CTA */}
+                      <div className="pl-10 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenReply(comment.id)}
+                          className="text-[10px] text-blue-800 font-bold hover:underline cursor-pointer flex items-center gap-1"
+                        >
+                          <MessageSquare className="w-3 h-3" />
+                          <span>Reply</span>
+                        </button>
+                      </div>
+
+                      {/* Inline reply composer form */}
+                      {replyingToId === comment.id && (
+                        <form
+                          onSubmit={(e) => handleAddReply(comment.id, e)}
+                          className="pl-10 mt-2 space-y-2"
+                        >
+                          <textarea
+                            placeholder="Type progress update or layout response..."
+                            rows={2}
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
+                            required
+                            className="w-full text-xs p-2.5 border border-stone-200 bg-stone-50/50 rounded-lg focus:outline-none focus:border-blue-800 leading-normal"
+                          />
+                          <div className="flex justify-end gap-2 text-xs">
+                            <button
+                              type="button"
+                              onClick={() => setReplyingToId(null)}
+                              className="px-3 py-1.5 bg-stone-100 text-stone-600 rounded-lg cursor-pointer hover:bg-stone-200 font-medium"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              className="px-3.5 py-1.5 bg-blue-800 text-white rounded-lg cursor-pointer hover:bg-blue-900 font-bold flex items-center gap-1"
+                            >
+                              <Send className="w-2.5 h-2.5" />
+                              <span>Submit Reply</span>
+                            </button>
+                          </div>
+                        </form>
+                      )}
+
+                      {/* Replies rendering nested indentation */}
+                      {comment.replies && comment.replies.length > 0 && (
+                        <div className="pl-10 space-y-3.5 pt-2.5 border-l border-stone-100 ml-4">
+                          {comment.replies.map((reply: any) => (
+                            <div key={reply.id} className="bg-stone-50/60 p-3 rounded-lg border border-stone-100 space-y-1.5">
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-stone-100 text-stone-600 flex items-center justify-center font-bold text-[10px]">
+                                  {reply.name.substring(0, 1).toUpperCase()}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-1 text-[10px]">
+                                    <span className="font-bold text-stone-900">{reply.name}</span>
+                                    <span className="text-[9px] bg-stone-250 text-stone-650 px-1.5 py-0.2 rounded">
+                                      {reply.role}
+                                    </span>
+                                  </div>
+                                  <span className="text-[8px] text-stone-400 font-mono block leading-none mt-0.5">
+                                    {reply.timestamp}
+                                  </span>
+                                </div>
+                              </div>
+                              <p className="text-[11px] text-stone-700 leading-relaxed">
+                                {reply.text}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Disqus Active Embed Component */}
+          {forumMode === 'disqus' && (
+            <div className="space-y-6">
+              {/* Informational banner warning about iframe sandboxing issues */}
+              <div className="bg-amber-50 border border-amber-200 text-amber-900 text-[10px] sm:text-xs p-3.5 rounded-xl leading-relaxed flex items-start gap-2.5">
+                <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5 animate-pulse" />
+                <div>
+                  <span className="font-bold">Third-Party Cookie Block Alert:</span> Standard browser security policies block cookies inside nested preview iframes, which makes Disqus fields read-only inside this development center. To type comments directly on Disqus, please click <span className="font-bold">"Open in New Tab"</span> at the top right, or switch to the <span className="font-bold">"Live Web Chat"</span> tab above! 
+                </div>
+              </div>
+
+              <div className="min-h-[350px] p-2 bg-stone-50/50 rounded-xl border border-stone-100">
+                <SafeDiscussionEmbed
+                  shortname="reno-project-kel"
+                  config={{
+                    url: typeof window !== 'undefined' ? window.location.href : 'https://sg-renoplanner.co',
+                    identifier: 'sg-renoplanner-forum-main',
+                    title: 'Singapore Home Renovation Planner - General Discussion Board',
+                    language: 'zh_TW'
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
         </div>
       </section>
 

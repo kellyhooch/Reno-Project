@@ -173,6 +173,149 @@ Your response must strictly conform to the expected JSON schema. Do not include 
   }
 });
 
+// --- COMMENTS & DISCUSSION DATABASE (SERVER-PERSISTED) ---
+import fs from 'fs';
+
+const COMMENTS_FILE = path.join(process.cwd(), 'comments.json');
+
+// Initialize comments file with default content if it doesn't exist
+const DEFAULT_COMMENTS = [
+  {
+    id: "comment-1",
+    name: "Kelvin Tan",
+    role: "🎨 Interior Designer",
+    text: "The HDB 4-room smart layout options are extremely solid! I highly recommend toggling on the cross-ventilation option here if you want to keep cooking smells out of the living area.",
+    likes: 14,
+    timestamp: "2 hours ago",
+    replies: [
+      {
+        id: "reply-1",
+        name: "Alex Goh",
+        role: "🏡 Homeowner",
+        text: "This saved me! Our kitchen doesn't face standard layout ventilation and this gave us the idea to use standard ceiling extraction ducts.",
+        timestamp: "1 hour ago"
+      }
+    ]
+  },
+  {
+    id: "comment-2",
+    name: "Evelyn Lim",
+    role: "🏡 Homeowner",
+    text: "Loved the 3-room mockup preview! We managed to maximize our study corner by following the template's compact sliding doors advice. Fits our hybrid work schedules perfectly without sacrificing general space.",
+    likes: 9,
+    timestamp: "4 hours ago",
+    replies: []
+  },
+  {
+    id: "comment-3",
+    name: "Marcus Goh",
+    role: "🛠️ Contractor",
+    text: "Remember to coordinate dry/wet plumbing limits before choosing open kitchen options! Some HDB layouts require custom pipe relocations which might stretch your renovation budget.",
+    likes: 11,
+    timestamp: "1 day ago",
+    replies: []
+  }
+];
+
+function readComments(): any[] {
+  try {
+    if (fs.existsSync(COMMENTS_FILE)) {
+      const data = fs.readFileSync(COMMENTS_FILE, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (err) {
+    console.error("Error reading comments file, using defaults:", err);
+  }
+  return DEFAULT_COMMENTS;
+}
+
+function writeComments(comments: any[]) {
+  try {
+    fs.writeFileSync(COMMENTS_FILE, JSON.stringify(comments, null, 2), 'utf8');
+  } catch (err) {
+    console.error("Error writing comments file:", err);
+  }
+}
+
+// Get all comments
+app.get('/api/comments', (req, res) => {
+  const comments = readComments();
+  res.json({ success: true, comments });
+});
+
+// Add a comment
+app.post('/api/comments', (req, res) => {
+  try {
+    const { name, role, text } = req.body;
+    if (!text || !text.trim()) {
+      return res.status(400).json({ success: false, error: 'Comment text is required' });
+    }
+    const comments = readComments();
+    const newComment = {
+      id: `comment-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      name: (name && name.trim()) || 'Singapore Renovator',
+      role: role || '🏡 Homeowner',
+      text: text.trim(),
+      likes: 0,
+      timestamp: 'Just now',
+      replies: []
+    };
+    comments.unshift(newComment);
+    writeComments(comments);
+    res.json({ success: true, comment: newComment, comments });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Add a reply
+app.post('/api/comments/:id/reply', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, role, text } = req.body;
+    if (!text || !text.trim()) {
+      return res.status(400).json({ success: false, error: 'Reply text is required' });
+    }
+    const comments = readComments();
+    const commentIndex = comments.findIndex(c => c.id === id);
+    if (commentIndex === -1) {
+      return res.status(404).json({ success: false, error: 'Comment not found' });
+    }
+    const newReply = {
+      id: `reply-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      name: (name && name.trim()) || 'Singapore Renovator',
+      role: role || '🏡 Homeowner',
+      text: text.trim(),
+      timestamp: 'Just now'
+    };
+    if (!comments[commentIndex].replies) {
+      comments[commentIndex].replies = [];
+    }
+    comments[commentIndex].replies.push(newReply);
+    writeComments(comments);
+    res.json({ success: true, reply: newReply, comments });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Like a comment
+app.post('/api/comments/:id/like', (req, res) => {
+  try {
+    const { id } = req.params;
+    const comments = readComments();
+    const commentIndex = comments.findIndex(c => c.id === id);
+    if (commentIndex === -1) {
+      return res.status(404).json({ success: false, error: 'Comment not found' });
+    }
+    comments[commentIndex].likes = (comments[commentIndex].likes || 0) + 1;
+    writeComments(comments);
+    res.json({ success: true, likes: comments[commentIndex].likes, comments });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Setup development dev-server or Serve static production assets
 async function serveApp() {
   if (process.env.NODE_ENV !== 'production') {

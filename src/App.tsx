@@ -38,6 +38,7 @@ import { RenovationConstraints, LayoutOption, PresetPlan, Furniture } from './ty
 import FloorPlanCanvas from './components/FloorPlanCanvas';
 import IsometricRenderer from './components/IsometricRenderer';
 import { supabase } from './lib/supabase';
+import { DiscussionEmbed } from 'disqus-react';
 
 // Helper for property type human descriptions
 const getPropertyLabel = (type: string) => {
@@ -2490,8 +2491,39 @@ Licensed building and design specifications ready for local contractor execution
         </div>
       )}
 
+      {/* Disqus Interactive Community Board */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 mb-6" id="disqus-forum-section">
+        <div className="bg-white rounded-2xl border border-stone-200 p-6 sm:p-8 shadow-sm">
+          <div className="flex items-center gap-2 mb-6 border-b border-stone-100 pb-4">
+            <div className="bg-blue-50 text-blue-800 p-2 rounded-xl">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-display font-dark text-stone-900 text-sm sm:text-base font-bold">
+                Community Discussion Board & Feedback Forum
+              </h3>
+              <p className="text-[10px] sm:text-xs text-stone-500">
+                Share your design layout ideas, ask questions, or exchange ideas with fellow homeowners.
+              </p>
+            </div>
+          </div>
+          
+          <div className="min-h-[250px]">
+            <DiscussionEmbed
+              shortname="reno-project-kel"
+              config={{
+                url: typeof window !== 'undefined' ? window.location.href : 'https://sg-renoplanner.co',
+                identifier: 'sg-renoplanner-forum-main',
+                title: 'Singapore Home Renovation Planner - General Discussion Board',
+                language: 'zh_TW'
+              }}
+            />
+          </div>
+        </div>
+      </section>
+
       {/* Humble modern organic Footer */}
-      <footer className="bg-white border-t border-stone-200 py-6 mt-12">
+      <footer className="bg-white border-t border-stone-200 py-6 mt-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-stone-500">
           <span>
             © 2026 Singapore Home Renovation Planner Inc. All Rights Reserved.

@@ -266,6 +266,42 @@ export default function App() {
     };
   }, []);
 
+  // Keyboard navigation arrows listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      if (activeEl) {
+        const tagName = activeEl.tagName.toLowerCase();
+        if (tagName === 'input' || tagName === 'textarea' || activeEl.hasAttribute('contenteditable')) {
+          return;
+        }
+      }
+
+      if (e.key === 'ArrowLeft') {
+        setCurrentStep((prev) => {
+          if (prev > 1) return prev - 1;
+          return prev;
+        });
+      } else if (e.key === 'ArrowRight') {
+        setCurrentStep((prev) => {
+          if (prev < 5) {
+            const nextStep = prev + 1;
+            const canGo = nextStep <= 3 || (nextStep === 4 && optionA) || (nextStep === 5 && selectedOption);
+            if (canGo) {
+              return nextStep;
+            }
+          }
+          return prev;
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [optionA, selectedOption]);
+
   // Preset Slider Adjusters
   const alignBudgetPreset = (presetType: 'hdb3' | 'hdb4' | 'hdb5' | 'condo') => {
     if (presetType === 'hdb3') setBudget(38000);
@@ -621,7 +657,7 @@ Licensed building and design specifications ready for local contractor execution
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => setCurrentStep(1)}>
-            <div className="bg-blue-800 text-white p-2 rounded-xl shadow-md rotate-3 hover:rotate-0 transition-transform duration-300">
+            <div className="bg-blue-800 text-white p-2 rounded-xl shadow-md transition-all duration-300">
               <Home className="w-5 h-5" id="header-logo-icon" />
             </div>
             <div>
@@ -673,6 +709,56 @@ Licensed building and design specifications ready for local contractor execution
           </nav>
 
           <div className="flex items-center gap-2">
+            {/* Universal Step Navigation Arrows */}
+            <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl border border-stone-200 text-xs shadow-inner">
+              <button
+                type="button"
+                onClick={() => {
+                  if (currentStep > 1) {
+                    setCurrentStep((prev) => prev - 1);
+                  }
+                }}
+                disabled={currentStep === 1}
+                className={`p-1.5 rounded-lg flex items-center justify-center transition-all ${
+                  currentStep > 1
+                    ? 'bg-white hover:bg-stone-50 border border-stone-150 text-stone-750 cursor-pointer shadow-xs'
+                    : 'text-stone-300 opacity-40 cursor-not-allowed'
+                }`}
+                title="Go to previous step (Back)"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (currentStep < 5) {
+                    const nextStep = currentStep + 1;
+                    const canGo = nextStep <= 3 || (nextStep === 4 && optionA) || (nextStep === 5 && selectedOption);
+                    if (canGo) {
+                      setCurrentStep(nextStep);
+                    }
+                  }
+                }}
+                disabled={(() => {
+                  if (currentStep >= 5) return true;
+                  const nextStep = currentStep + 1;
+                  return !(nextStep <= 3 || (nextStep === 4 && optionA) || (nextStep === 5 && selectedOption));
+                })()}
+                className={`p-1.5 rounded-lg flex items-center justify-center transition-all ${
+                  (() => {
+                    if (currentStep >= 5) return false;
+                    const nextStep = currentStep + 1;
+                    return nextStep <= 3 || (nextStep === 4 && optionA) || (nextStep === 5 && selectedOption);
+                  })()
+                    ? 'bg-white hover:bg-stone-50 border border-stone-150 text-stone-750 cursor-pointer shadow-xs'
+                    : 'text-stone-300 opacity-40 cursor-not-allowed'
+                }`}
+                title="Go to next step (Forward)"
+              >
+                <ChevronRight className="w-3.5 h-3.5 text-stone-750" />
+              </button>
+            </div>
+
             {/* Active Tier indicator */}
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-blue-200 bg-blue-50/50">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>

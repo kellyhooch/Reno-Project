@@ -1,0 +1,6 @@
+{
+  "name": "Singapore Home Renovation Planner",
+  "description": "An AI-powered home renovation planner that generates custom 2D & 3D layout options based on Singapore property rules, climate, budget, and Fengshui.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -158,10 +158,10 @@ export default function IsometricRenderer({
         };
       case 'plant':
         return {
-          top: 'fill-emerald-400',
-          left: 'fill-emerald-700',
-          right: 'fill-emerald-800',
-          stroke: 'stroke-emerald-950/30'
+          top: 'fill-blue-400',
+          left: 'fill-blue-700',
+          right: 'fill-blue-800',
+          stroke: 'stroke-blue-950/30'
         };
       case 'tv_console':
       case 'desk':

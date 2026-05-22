@@ -12,6 +12,7 @@ interface FloorPlanCanvasProps {
   highlightedWalls?: Array<{ x1: number; y1: number; x2: number; y2: number; type: string }>;
   hoveredFurnitureId?: string | null;
   setHoveredFurnitureId?: (id: string | null) => void;
+  currentTier?: 'free' | 'standard' | 'premium';
 }
 
 export default function FloorPlanCanvas({
@@ -19,7 +20,8 @@ export default function FloorPlanCanvas({
   onSelectFurniture,
   highlightedWalls,
   hoveredFurnitureId,
-  setHoveredFurnitureId
+  setHoveredFurnitureId,
+  currentTier = 'standard'
 }: FloorPlanCanvasProps) {
   const { width = 800, height = 500, walls = [], furniture = [], roomLabels = [] } = layout;
 
@@ -28,7 +30,7 @@ export default function FloorPlanCanvas({
     const isHovered = hoveredFurnitureId === f.id;
     const color = isHovered 
       ? 'fill-amber-100 stroke-amber-600' 
-      : 'fill-emerald-50/70 stroke-emerald-800';
+      : 'fill-blue-50/70 stroke-blue-800';
 
     return (
       <g
@@ -45,9 +47,9 @@ export default function FloorPlanCanvas({
             {/* Frame */}
             <rect x={-f.w / 2} y={-f.h / 2} width={f.w} height={f.h} rx={4} className={`${color} stroke-[1.5]`} />
             {/* Pillows */}
-            <rect x={-f.w / 2 + 10} y={-f.h / 2 + 10} width={25} height={f.h - 20} rx={2} className="fill-white stroke-emerald-800 stroke-[1]" />
+            <rect x={-f.w / 2 + 10} y={-f.h / 2 + 10} width={25} height={f.h - 20} rx={2} className="fill-white stroke-blue-800 stroke-[1]" />
             {/* Blanket sheet fold */}
-            <path d={`M ${-f.w / 2 + 45} ${-f.h / 2} L ${-f.w / 2 + 45} ${f.h / 2}`} className="stroke-emerald-800 stroke-[1] stroke-dasharray-[2]" />
+            <path d={`M ${-f.w / 2 + 45} ${-f.h / 2} L ${-f.w / 2 + 45} ${f.h / 2}`} className="stroke-blue-800 stroke-[1] stroke-dasharray-[2]" />
           </g>
         )}
 
@@ -56,10 +58,10 @@ export default function FloorPlanCanvas({
             {/* Main body */}
             <rect x={-f.w / 2} y={-f.h / 2} width={f.w} height={f.h} rx={6} className={`${color} stroke-[1.5]`} />
             {/* Backrest cushioning */}
-            <rect x={-f.w / 2} y={f.h / 2 - 12} width={f.w} height={12} rx={2} className="fill-emerald-100/50 stroke-emerald-800 stroke-[1]" />
+            <rect x={-f.w / 2} y={f.h / 2 - 12} width={f.w} height={12} rx={2} className="fill-blue-100/50 stroke-blue-800 stroke-[1]" />
             {/* Armrests */}
-            <rect x={-f.w / 2} y={-f.h / 2} width={10} height={f.h} rx={2} className="fill-emerald-100/50 stroke-emerald-800 stroke-[1]" />
-            <rect x={f.w / 2 - 10} y={-f.h / 2} width={10} height={f.h} rx={2} className="fill-emerald-100/50 stroke-emerald-800 stroke-[1]" />
+            <rect x={-f.w / 2} y={-f.h / 2} width={10} height={f.h} rx={2} className="fill-blue-100/50 stroke-blue-800 stroke-[1]" />
+            <rect x={f.w / 2 - 10} y={-f.h / 2} width={10} height={f.h} rx={2} className="fill-blue-100/50 stroke-blue-800 stroke-[1]" />
           </g>
         )}
 
@@ -76,10 +78,10 @@ export default function FloorPlanCanvas({
             {/* Dining Table */}
             <rect x={-f.w / 2} y={-f.h / 2} width={f.w} height={f.h} rx={2} className={`${color} stroke-[1.5]`} />
             {/* Chairs */}
-            <circle cx={-f.w / 2 - 8} cy={-15} r={8} className="fill-emerald-100 stroke-emerald-800" />
-            <circle cx={-f.w / 2 - 8} cy={15} r={8} className="fill-emerald-100 stroke-emerald-800" />
-            <circle cx={f.w / 2 + 8} cy={-15} r={8} className="fill-emerald-100 stroke-emerald-800" />
-            <circle cx={f.w / 2 + 8} cy={15} r={8} className="fill-emerald-100 stroke-emerald-800" />
+            <circle cx={-f.w / 2 - 8} cy={-15} r={8} className="fill-blue-100 stroke-blue-800" />
+            <circle cx={-f.w / 2 - 8} cy={15} r={8} className="fill-blue-100 stroke-blue-800" />
+            <circle cx={f.w / 2 + 8} cy={-15} r={8} className="fill-blue-100 stroke-blue-800" />
+            <circle cx={f.w / 2 + 8} cy={15} r={8} className="fill-blue-100 stroke-blue-800" />
           </g>
         )}
 
@@ -87,17 +89,17 @@ export default function FloorPlanCanvas({
           <g>
             <rect x={-f.w / 2} y={-f.h / 2} width={f.w} height={f.h} rx={2} className={`${color} stroke-[1.5]`} />
             {/* Overlays representing sink/counter details */}
-            <rect x={-f.w / 2 + 15} y={-10} width={25} height={20} rx={1} className="fill-none stroke-emerald-800 stroke-[1]" />
-            <circle cx={f.w / 2 - 25} cy={-5} r={6} className="fill-none stroke-emerald-800 stroke-[1]" />
-            <circle cx={f.w / 2 - 25} cy={10} r={6} className="fill-none stroke-emerald-800 stroke-[1]" />
+            <rect x={-f.w / 2 + 15} y={-10} width={25} height={20} rx={1} className="fill-none stroke-blue-800 stroke-[1]" />
+            <circle cx={f.w / 2 - 25} cy={-5} r={6} className="fill-none stroke-blue-800 stroke-[1]" />
+            <circle cx={f.w / 2 - 25} cy={10} r={6} className="fill-none stroke-blue-800 stroke-[1]" />
           </g>
         )}
 
         {f.type === 'wardrobe' && (
           <g>
             <rect x={-f.w / 2} y={-f.h / 2} width={f.w} height={f.h} rx={2} className={`${color} stroke-[1.5]`} />
-            <line x1={-f.w / 2} y1={-f.h / 2} x2={f.w / 2} y2={f.h / 2} className="stroke-emerald-800 stroke-[0.5]" />
-            <line x1={-f.w / 2} y1={f.h / 2} x2={f.w / 2} y2={-f.h / 2} className="stroke-emerald-800 stroke-[0.5]" />
+            <line x1={-f.w / 2} y1={-f.h / 2} x2={f.w / 2} y2={f.h / 2} className="stroke-blue-800 stroke-[0.5]" />
+            <line x1={-f.w / 2} y1={f.h / 2} x2={f.w / 2} y2={-f.h / 2} className="stroke-blue-800 stroke-[0.5]" />
           </g>
         )}
 
@@ -105,8 +107,8 @@ export default function FloorPlanCanvas({
           <g>
             <rect x={-f.w / 2} y={-f.h / 2} width={f.w} height={f.h} rx={2} className={`${color} stroke-[1.5]`} />
             {/* Laptop outline */}
-            <rect x={-15} y={-8} width={30} height={16} rx={1} className="fill-white stroke-emerald-800 stroke-[1]" />
-            <line x1={-15} y1={0} x2={15} y2={0} className="stroke-emerald-800 stroke-[1]" />
+            <rect x={-15} y={-8} width={30} height={16} rx={1} className="fill-white stroke-blue-800 stroke-[1]" />
+            <line x1={-15} y1={0} x2={15} y2={0} className="stroke-blue-800 stroke-[1]" />
           </g>
         )}
 
@@ -115,16 +117,16 @@ export default function FloorPlanCanvas({
             {/* Pot */}
             <circle cx={0} cy={0} r={12} className={`${color} stroke-[1.5]`} />
             {/* Foliage */}
-            <path d="M 0 -10 C -5 -25 5 -25 0 -10 Z" className="fill-emerald-600 stroke-emerald-900 stroke-[0.5]" />
-            <path d="M -8 2 C -20 12 -25 0 -8 2 Z" className="fill-emerald-600 stroke-emerald-900 stroke-[0.5]" />
-            <path d="M 8 2 C 20 12 25 0 8 2 Z" className="fill-emerald-600 stroke-emerald-900 stroke-[0.5]" />
+            <path d="M 0 -10 C -5 -25 5 -25 0 -10 Z" className="fill-blue-600 stroke-blue-900 stroke-[0.5]" />
+            <path d="M -8 2 C -20 12 -25 0 -8 2 Z" className="fill-blue-600 stroke-blue-900 stroke-[0.5]" />
+            <path d="M 8 2 C 20 12 25 0 8 2 Z" className="fill-blue-600 stroke-blue-900 stroke-[0.5]" />
           </g>
         )}
 
         {f.type === 'sink' && (
           <g>
             <rect x={-f.w / 2} y={-f.h / 2} width={f.w} height={f.h} rx={4} className={`${color} stroke-[1.5]`} />
-            <rect x={-f.w / 2 + 5} y={-f.h / 2 + 5} width={f.w - 10} height={f.h - 10} rx={2} className="fill-blue-50/50 stroke-emerald-800 stroke-[1]" />
+            <rect x={-f.w / 2 + 5} y={-f.h / 2 + 5} width={f.w - 10} height={f.h - 10} rx={2} className="fill-blue-50/50 stroke-blue-800 stroke-[1]" />
             <circle cx={0} cy={-f.h / 2 + 5} r={2} className="fill-slate-800" />
           </g>
         )}
@@ -133,7 +135,7 @@ export default function FloorPlanCanvas({
         {!['bed', 'sofa', 'tv_console', 'dining', 'kitchen_counter', 'wardrobe', 'desk', 'plant', 'sink'].includes(f.type) && (
           <g>
             <rect x={-f.w / 2} y={-f.h / 2} width={f.w} height={f.h} rx={2} className={`${color} stroke-[1.5]`} />
-            <text x={0} y={4} textAnchor="middle" className="font-mono text-[9px] fill-emerald-950 font-medium">
+            <text x={0} y={4} textAnchor="middle" className="font-mono text-[9px] fill-blue-950 font-medium">
               {f.label.slice(0, 3)}
             </text>
           </g>
@@ -236,7 +238,30 @@ export default function FloorPlanCanvas({
         })}
 
         {/* Render all furniture layout designs */}
-        {furniture.map((f) => renderFurnitureItem(f))}
+        {(currentTier === 'free' 
+          ? furniture.filter((f) => ['bed', 'sofa', 'dining'].includes(f.type)) // Only show structural main elements as a "Sample"
+          : furniture
+        ).map((f) => renderFurnitureItem(f))}
+
+        {/* Floating sample watermark banner if user is on free tier */}
+        {currentTier === 'free' && (
+          <g transform={`translate(${width / 2}, ${height / 2})`} className="pointer-events-none select-none">
+            <rect
+              x={-240}
+              y={-30}
+              width={480}
+              height={60}
+              rx={12}
+              className="fill-rose-900/90 stroke-rose-600 stroke-[1.5] backdrop-blur-md"
+            />
+            <text x={0} y={-4} textAnchor="middle" className="fill-white font-sans text-xs font-bold uppercase tracking-widest leading-none">
+              🔒 Simplified Sample Blueprint
+            </text>
+            <text x={0} y={15} textAnchor="middle" className="fill-rose-200 font-sans text-[10px] tracking-tight leading-none">
+              Upgrade to Standard/Premium to unlock all custom structural layout elements!
+            </text>
+          </g>
+        )}
 
         {/* Render Clean Room Labels */}
         {roomLabels.map((lbl, idx) => (

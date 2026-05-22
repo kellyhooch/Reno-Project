@@ -96,7 +96,7 @@ export interface LayoutOption {
 export interface PresetPlan {
   id: string;
   name: string;
-  type: 'hdb_3' | 'hdb_4' | 'hdb_5' | 'condo';
+  type: 'hdb_3' | 'hdb_4' | 'hdb_5' | 'condo' | 'landed';
   sqm: number;
   imageUrl?: string;
   layout2D: RenderLayout;

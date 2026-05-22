@@ -42,9 +42,9 @@ const getPropertyLabel = (type: string) => {
 // API Endpoint for Renovation Analysis
 app.post('/api/analyze-renovation', async (req, res) => {
   try {
-    const { propertyType, budget, spaceConstraints, climatePrefs, fengshuiEnabled, customNotes, floorPlanImage } = req.body;
+    const { propertyType, budget, spaceConstraints, climatePrefs, fengshuiEnabled, customNotes, floorPlanImage, areaSize = 90 } = req.body;
 
-    console.log(`Received renovation request for ${getPropertyLabel(propertyType)} with budget $${budget}`);
+    console.log(`Received renovation request for ${getPropertyLabel(propertyType)} (${areaSize} sqm) with budget $${budget}`);
 
     // Core prompts describing the context and formatting instructions
     const systemPrompt = `You are an expert Singapore interior designer and renovation consultant specializing in HDB, condo, and URA guidelines.
@@ -54,6 +54,7 @@ Option B focuses on 'Max Storage' (built-in carpentry, storage efficiency, multi
 
 Analyze the user's specific guidelines:
 - Property Type: ${getPropertyLabel(propertyType)}
+- Total Floor Area: ${areaSize} sqm (~${Math.round(areaSize * 10.76)} sqft)
 - Selected Budget: $${budget} (SGD)
 - Space Demands Requested: ${Object.entries(spaceConstraints).filter(([_, v]) => v).map(([k]) => k).join(', ') || 'Standard layout'}
 - Climate Preferences: ${Object.entries(climatePrefs).filter(([_, v]) => v).map(([k]) => k).join(', ') || 'Standard ventilation'}

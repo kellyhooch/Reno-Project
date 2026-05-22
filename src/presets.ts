@@ -165,5 +165,75 @@ export const PRESET_PLANS: PresetPlan[] = [
         { text: 'UTILITY YARD', x: 120, y: 410 },
       ]
     }
+  },
+  {
+    id: 'condo-luxury',
+    name: 'Luxury Condominium Suite',
+    type: 'condo',
+    sqm: 95,
+    layout2D: {
+      width: 800,
+      height: 500,
+      walls: [
+        { x1: 50, y1: 50, x2: 750, y2: 50, type: 'exterior' },
+        { x1: 750, y1: 50, x2: 750, y2: 450, type: 'exterior' },
+        { x1: 750, y1: 450, x2: 50, y2: 450, type: 'exterior' },
+        { x1: 50, y1: 450, x2: 50, y2: 50, type: 'exterior' },
+        { x1: 320, y1: 50, x2: 320, y2: 450, type: 'interior' },
+        { x1: 50, y1: 220, x2: 320, y2: 220, type: 'interior' },
+        { x1: 320, y1: 200, x2: 750, y2: 200, type: 'interior' },
+        { x1: 540, y1: 200, x2: 540, y2: 450, type: 'interior' }
+      ],
+      furniture: [
+        { id: 'c_l1', type: 'sofa', x: 110, y: 120, w: 150, h: 60, rotation: 0, label: 'Italian Leather Sofa' },
+        { id: 'c_l2', type: 'tv_console', x: 280, y: 120, w: 20, h: 90, rotation: 0, label: 'Slim Marble Console' },
+        { id: 'c_d1', type: 'dining', x: 200, y: 160, w: 85, h: 55, rotation: 90, label: 'Glass Top Dining Set' },
+        { id: 'c_k1', type: 'kitchen_counter', x: 100, y: 340, w: 160, h: 50, rotation: 0, label: 'Open Concept Dry Kitchen' },
+        { id: 'c_m1', type: 'bed', x: 630, y: 260, w: 160, h: 140, rotation: 90, label: 'King Bed & Padded Headboard' },
+        { id: 'c_b1', type: 'bed', x: 420, y: 250, w: 140, h: 105, rotation: 180, label: 'Ensuite Queen Bed' }
+      ],
+      roomLabels: [
+        { text: 'BALCONY LOUNGE', x: 145, y: 80 },
+        { text: 'CONDO DINING', x: 240, y: 175 },
+        { text: 'DRY KITCHEN AREA', x: 130, y: 290 },
+        { text: 'MASTER ROOM EN-SUITE', x: 640, y: 300 },
+        { text: 'BEDROOM 2 (STUDIO)', x: 420, y: 320 }
+      ]
+    }
+  },
+  {
+    id: 'landed-villa',
+    name: 'Multi-Generation Landed House',
+    type: 'landed',
+    sqm: 210,
+    layout2D: {
+      width: 800,
+      height: 500,
+      walls: [
+        { x1: 55, y1: 55, x2: 745, y2: 55, type: 'exterior' },
+        { x1: 745, y1: 55, x2: 745, y2: 445, type: 'exterior' },
+        { x1: 745, y1: 445, x2: 55, y2: 445, type: 'exterior' },
+        { x1: 55, y1: 445, x2: 55, y2: 55, type: 'exterior' },
+        { x1: 280, y1: 55, x2: 280, y2: 445, type: 'interior' },
+        { x1: 55, y1: 240, x2: 280, y2: 240, type: 'interior' },
+        { x1: 280, y1: 180, x2: 745, y2: 180, type: 'interior' },
+        { x1: 510, y1: 180, x2: 510, y2: 445, type: 'interior' }
+      ],
+      furniture: [
+        { id: 'v_l1', type: 'sofa', x: 110, y: 110, w: 170, h: 70, rotation: 0, label: 'Sectional modular sofa' },
+        { id: 'v_l2', type: 'tv_console', x: 250, y: 110, w: 20, h: 120, rotation: 0, label: 'Landed theater wall' },
+        { id: 'v_d1', type: 'dining', x: 190, y: 170, w: 110, h: 65, rotation: 90, label: '8-Seater Hardwood Table' },
+        { id: 'v_k1', type: 'kitchen_counter', x: 110, y: 360, w: 150, h: 55, rotation: 0, label: 'Gourmet Wet Kitchen Run' },
+        { id: 'v_m1', type: 'bed', x: 620, y: 280, w: 170, h: 160, rotation: 90, label: 'Super King Bed Set' },
+        { id: 'v_b1', type: 'bed', x: 390, y: 280, w: 145, h: 115, rotation: 180, label: 'Grand Guest Bedroom' }
+      ],
+      roomLabels: [
+        { text: 'VERANDA & FOYER', x: 130, y: 80 },
+        { text: 'COURTYARD DINING', x: 230, y: 170 },
+        { text: 'CULINARY WORKPLACE', x: 120, y: 300 },
+        { text: 'OWNERS RETREAT', x: 630, y: 320 },
+        { text: 'BEDROOM 2 (COURT)', x: 400, y: 340 }
+      ]
+    }
   }
 ];

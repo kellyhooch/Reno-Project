@@ -138,6 +138,226 @@ export const getOptionsForPreset = (presetId: string): { optionA: LayoutOption; 
     };
   }
 
+  if (presetId === 'condo-luxury') {
+    return {
+      optionA: {
+        id: 'option-a',
+        name: 'Option A — Elite Horizon Breezeway',
+        tagline: 'Panoramic Airflow Concept',
+        description: 'Designed to elevate your high-rise condominium layout. We delete the decorative entrance partition to connect the gourmet kitchen queue to the active balcony. This channels high-altitude wind currents across the primary living zone, keeping the apartment fresh. Frameless glass accordion panels maximize views of Singapore’s urban skyline.',
+        budgetEstimate: 75000,
+        budgetStatus: 'met',
+        budgetFeedback: 'Excellently scoped within high-end condominium guidelines. Includes premium Italian stone quartz and timber veneers.',
+        legalStatus: 'met',
+        legalFeedback: 'MCST Board submission compliant. The structural balcony glass walls remain unaltered, fully matching standard estate weight tolerances.',
+        climateStatus: 'met',
+        climateFeedback: 'Superior wind corridor utilization. Minimizes energy usage by leveraging natural wind suction pressure.',
+        fengshuiStatus: 'met',
+        fengshuiFeedback: 'Main entryway lines up beautifully with structural wealth zones. Bed headboards feature grounded timber feature cladding.',
+        highlights: [
+          'Hacked boundary divider and partition wall for continuous social view',
+          'Sited full 2.2m quartz breakfast wrap counter with designer pendant lights',
+          'Aligned passage routes to form a natural high-rise ventilation tunnel',
+          'Fitted solid humidity-sealed vinyl overlay across living-kitchen areas'
+        ],
+        layout2D: {
+          width: 800,
+          height: 500,
+          walls: [
+            { x1: 50, y1: 50, x2: 750, y2: 50, type: 'exterior' },
+            { x1: 750, y1: 50, x2: 750, y2: 450, type: 'exterior' },
+            { x1: 750, y1: 450, x2: 50, y2: 450, type: 'exterior' },
+            { x1: 50, y1: 450, x2: 50, y2: 50, type: 'exterior' },
+            { x1: 320, y1: 50, x2: 320, y2: 450, type: 'interior' },
+            { x1: 50, y1: 220, x2: 320, y2: 220, type: 'demolished' }, // demolished kitchen wall style!
+            { x1: 320, y1: 200, x2: 750, y2: 200, type: 'interior' },
+            { x1: 540, y1: 200, x2: 540, y2: 450, type: 'interior' }
+          ],
+          furniture: [
+            { id: 'c_l1', type: 'sofa', x: 110, y: 120, w: 150, h: 60, rotation: 0, label: 'Modern Canvas Loft Sofa' },
+            { id: 'c_l2', type: 'tv_console', x: 280, y: 120, w: 20, h: 90, rotation: 0, label: 'Veneered TV Stand' },
+            { id: 'c_ki', type: 'kitchen_counter', x: 160, y: 220, w: 100, h: 40, rotation: 0, label: 'Slim Quartz Island' },
+            { id: 'c_k1', type: 'kitchen_counter', x: 100, y: 340, w: 160, h: 50, rotation: 0, label: 'Linear Kitchen Run' },
+            { id: 'c_m1', type: 'bed', x: 630, y: 260, w: 160, h: 140, rotation: 90, label: 'King Bed' },
+            { id: 'c_b1', type: 'bed', x: 420, y: 250, w: 140, h: 105, rotation: 180, label: 'Cozy Queen Bed' }
+          ],
+          roomLabels: [
+            { text: 'LOFT LOUNGE', x: 145, y: 80 },
+            { text: 'QUARTZ ISLAND', x: 180, y: 220 },
+            { text: 'KITCHEN LAB', x: 130, y: 300 },
+            { text: 'MASTER RETREAT', x: 640, y: 300 },
+            { text: 'STUDIO BEDROOM', x: 420, y: 320 }
+          ]
+        },
+        layout3D: { isometricRooms: [] }
+      },
+      optionB: {
+        id: 'option-b',
+        name: 'Option B — Signature Walk-in Suite',
+        tagline: 'High-Density Smart Design',
+        description: 'Focuses on structural maximizing of master bedroom zones and luxury custom carpentry. We erect a professional floor-to-ceiling oak bookshelf divider at the foyer to shield internal visual paths, and integrate a comprehensive, bespoke walk-in wardrobe system inside the Master Room backed by warm-led cabinet sensors.',
+        budgetEstimate: 98050,
+        budgetStatus: 'met',
+        budgetFeedback: 'Slightly higher cost due to extensive customized built-in timber cabinetry, but directly amplifies the high-value aesthetic and resale appeal.',
+        legalStatus: 'met',
+        legalFeedback: 'All materials meet MCST fire assessment indices. Custom partition timber drywalls do not interfere with standard fire sprinkler arrays.',
+        climateStatus: 'warning',
+        climateFeedback: 'The large foyer divider slightly dampens main door wind circulation. Air conditioning layout is optimized for individual bedroom zones.',
+        fengshuiStatus: 'met',
+        fengshuiFeedback: 'Foyer custom timber acts as an excellent Chi shield. Ensures cozy, wind-sheltered sleeping zones with no exposed bed footboards.',
+        highlights: [
+          'Created bespoke 2.6m floor-to-ceiling glass-door walk-in wardrobe corridor',
+          'Erected sleek timber slate focal divider at entry foyer with shoe drawers',
+          'Integrated custom floating vanity console with warm backlit LED oval mirror',
+          'Fitted hidden multi-deck laundry shelf unit within kitchen service alcove'
+        ],
+        layout2D: {
+          width: 800,
+          height: 500,
+          walls: [
+            { x1: 50, y1: 50, x2: 750, y2: 50, type: 'exterior' },
+            { x1: 750, y1: 50, x2: 750, y2: 450, type: 'exterior' },
+            { x1: 750, y1: 450, x2: 50, y2: 450, type: 'exterior' },
+            { x1: 50, y1: 450, x2: 50, y2: 50, type: 'exterior' },
+            { x1: 320, y1: 50, x2: 320, y2: 450, type: 'interior' },
+            { x1: 50, y1: 220, x2: 320, y2: 220, type: 'interior' },
+            { x1: 320, y1: 200, x2: 750, y2: 200, type: 'interior' },
+            { x1: 540, y1: 200, x2: 540, y2: 450, type: 'interior' },
+            { x1: 540, y1: 330, x2: 750, y2: 330, type: 'new' } // walk-in partition!
+          ],
+          furniture: [
+            { id: 'c_l1_s', type: 'sofa', x: 110, y: 125, w: 140, h: 60, rotation: 0, label: 'Lounge sofa with storage' },
+            { id: 'c_l2_s', type: 'tv_console', x: 280, y: 120, w: 20, h: 90, rotation: 0, label: 'Bespoke Wooden Cabinet' },
+            { id: 'c_f_d', type: 'wardrobe', x: 100, y: 195, w: 30, h: 80, rotation: 90, label: 'Slate Foyer Divider' },
+            { id: 'c_k1_s', type: 'kitchen_counter', x: 100, y: 340, w: 160, h: 50, rotation: 0, label: 'Cabinet kitchen set' },
+            { id: 'c_m1_s', type: 'bed', x: 630, y: 240, w: 150, h: 130, rotation: 90, label: 'King Storage Bed' },
+            { id: 'c_w_w', type: 'wardrobe', x: 630, y: 390, w: 160, h: 40, rotation: 0, label: 'Walk-In Wardrobes' },
+            { id: 'c_b1_s', type: 'bed', x: 420, y: 250, w: 140, h: 105, rotation: 180, label: 'Guest Bed Set' }
+          ],
+          roomLabels: [
+            { text: 'LOUNGE SUITE', x: 145, y: 90 },
+            { text: 'FOYER SHIELD', x: 140, y: 195 },
+            { text: 'CABINETRY RUN KITCHEN', x: 130, y: 300 },
+            { text: 'MASTER RETREAT', x: 640, y: 220 },
+            { text: 'WALK-IN SPECS', x: 630, y: 390 },
+            { text: 'COZY GUEST ROOM', x: 420, y: 320 }
+          ]
+        },
+        layout3D: { isometricRooms: [] }
+      }
+    };
+  }
+
+  if (presetId === 'landed-villa') {
+    return {
+      optionA: {
+        id: 'option-a',
+        name: 'Option A — Luminous Courtyard Estate',
+        tagline: 'Double-Height Ventilation',
+        description: 'Specially engineered for expansive landed envelopes. We open up the patio courtyard boundary, installing grand multi-stack high-performance sliding doors that link the indoor living foyer to the exterior. This encourages cool garden breeze circulation and draws natural sunlight deep into the central core.',
+        budgetEstimate: 165000,
+        budgetStatus: 'met',
+        budgetFeedback: 'Highly efficient allocation of luxury structural capital. Retains existing structural columns and targets premium weather-resistant facade glass.',
+        legalStatus: 'met',
+        legalFeedback: 'Complies fully with URA landed housing envelope controls. All setbacks (minimum 2.0m from side boundaries and 3.0m from rear line) are meticulously met.',
+        climateStatus: 'met',
+        climateFeedback: 'Superior. Employs thermal chimney cooling strategies, utilizing open stair wells and double-height skylight portals to disperse rising warm air layers.',
+        fengshuiStatus: 'met',
+        fengshuiFeedback: 'Excellent water element placements suggested near front garden entrance. Fosters smooth, flowing, prosperous geomantic dynamics.',
+        highlights: [
+          'Demolished central non-bearing partitions to frame broad open visual sightlines',
+          'Sited 3.0m signature Calacatta marble kitchen hub with high-end appliances',
+          'Installed multi-stack solar-shielded double-glazed sliding glass walls',
+          'Built natural hardwood outdoor deck with integrated marine-grade LED spots'
+        ],
+        layout2D: {
+          width: 800,
+          height: 500,
+          walls: [
+            { x1: 55, y1: 55, x2: 745, y2: 55, type: 'exterior' },
+            { x1: 745, y1: 55, x2: 745, y2: 445, type: 'exterior' },
+            { x1: 745, y1: 445, x2: 55, y2: 445, type: 'exterior' },
+            { x1: 55, y1: 445, x2: 55, y2: 55, type: 'exterior' },
+            { x1: 280, y1: 55, x2: 280, y2: 445, type: 'interior' },
+            { x1: 55, y1: 240, x2: 280, y2: 240, type: 'demolished' }, // opened up kitchen!
+            { x1: 280, y1: 180, x2: 745, y2: 180, type: 'interior' },
+            { x1: 510, y1: 180, x2: 510, y2: 445, type: 'interior' }
+          ],
+          furniture: [
+            { id: 'v_l1', type: 'sofa', x: 110, y: 110, w: 170, h: 70, rotation: 0, label: 'Premium Italian Sectional' },
+            { id: 'v_l2', type: 'tv_console', x: 250, y: 110, w: 20, h: 120, rotation: 0, label: 'Landed theater wall' },
+            { id: 'v_ki', type: 'kitchen_counter', x: 160, y: 240, w: 110, h: 45, rotation: 0, label: 'Signature Marble Hub' },
+            { id: 'v_k1', type: 'kitchen_counter', x: 110, y: 360, w: 150, h: 55, rotation: 0, label: 'Wet Kitchen Prep Line' },
+            { id: 'v_m1', type: 'bed', x: 620, y: 280, w: 170, h: 160, rotation: 90, label: 'Super King Bed Set' },
+            { id: 'v_b1', type: 'bed', x: 390, y: 280, w: 145, h: 115, rotation: 180, label: 'Guest Suite Bed' }
+          ],
+          roomLabels: [
+            { text: 'COURTYARD FOYER', x: 130, y: 80 },
+            { text: 'SIGNATURE HUB', x: 180, y: 240 },
+            { text: 'GOURMET LAB', x: 120, y: 300 },
+            { text: 'OWNERS RETREAT', x: 630, y: 320 },
+            { text: 'GUEST SUITE', x: 400, y: 340 }
+          ]
+        },
+        layout3D: { isometricRooms: [] }
+      },
+      optionB: {
+        id: 'option-b',
+        name: 'Option B — Opulent Dual-Living Sanctuary',
+        tagline: 'Multi-Generation Design',
+        description: 'Focuses on private luxury compartments and expansive customized timber structural carpentry. We build complete, separate, dedicated living zones equipped with sound-damping partitions and customized floor-to-ceiling closets. A stunning hand-crafted solid timber library divider separates study lounges from primary relaxation zones.',
+        budgetEstimate: 220000,
+        budgetStatus: 'met',
+        budgetFeedback: 'Bespoke high-end design. The premium, customized architectural timber panelling, soundproof partitions, and marble worktops account for the luxury budget.',
+        legalStatus: 'met',
+        legalFeedback: 'Full compliance with BCA structural guidelines. Drywall partitions feature class 0 surface flame spread ratings satisfying civilian safety requirements.',
+        climateStatus: 'met',
+        climateFeedback: 'Optimized airflow design. Double-seal weatherproof timber panels handle direct sun heat and monsoon downpours with ease.',
+        fengshuiStatus: 'met',
+        fengshuiFeedback: 'Strategic wood-slat partitions control direct structural pathways, preserving cozy sleeping sanctuaries and screening major restroom corridors completely.',
+        highlights: [
+          'Erected stunning 4.2m solid teak timber foyer partitions and library units',
+          'Configured separate multi-functional parent lounge with acoustic backing',
+          'Designed grand master suite wardrobe annex with soft touch sensors',
+          'Fitted customizable smart temperature climate automation sensors throughout'
+        ],
+        layout2D: {
+          width: 800,
+          height: 500,
+          walls: [
+            { x1: 55, y1: 55, x2: 745, y2: 55, type: 'exterior' },
+            { x1: 745, y1: 55, x2: 745, y2: 445, type: 'exterior' },
+            { x1: 745, y1: 445, x2: 55, y2: 445, type: 'exterior' },
+            { x1: 55, y1: 445, x2: 55, y2: 55, type: 'exterior' },
+            { x1: 280, y1: 55, x2: 280, y2: 445, type: 'interior' },
+            { x1: 55, y1: 240, x2: 280, y2: 240, type: 'interior' },
+            { x1: 280, y1: 180, x2: 745, y2: 180, type: 'interior' },
+            { x1: 510, y1: 180, x2: 510, y2: 445, type: 'interior' },
+            { x1: 280, y1: 340, x2: 510, y2: 340, type: 'new' } // new wall partition!
+          ],
+          furniture: [
+            { id: 'v_l1_s', type: 'sofa', x: 110, y: 110, w: 170, h: 70, rotation: 0, label: 'Sectional with wood accents' },
+            { id: 'v_l2_s', type: 'tv_console', x: 250, y: 110, w: 20, h: 120, rotation: 0, label: 'Solid Teak Console' },
+            { id: 'v_f_t', type: 'wardrobe', x: 80, y: 175, w: 30, h: 95, rotation: 90, label: 'Custom Teak Divider' },
+            { id: 'v_k1_s', type: 'kitchen_counter', x: 110, y: 360, w: 150, h: 55, rotation: 0, label: 'Chef Kitchen Line' },
+            { id: 'v_m1_s', type: 'bed', x: 620, y: 280, w: 170, h: 160, rotation: 90, label: 'Bespoke King Bed' },
+            { id: 'v_b1_s', type: 'bed', x: 390, y: 240, w: 145, h: 105, rotation: 180, label: 'Senior Master Queen' },
+            { id: 'v_bst_d', type: 'desk', x: 380, y: 400, w: 110, h: 35, rotation: 0, label: 'Teak library desk' }
+          ],
+          roomLabels: [
+            { text: 'GRAND LOUNGE', x: 130, y: 80 },
+            { text: 'WOOD TEAK DIVIDER', x: 155, y: 185 },
+            { text: 'CHEF CUISINE LAB', x: 120, y: 300 },
+            { text: 'OWNERS RETREAT', x: 630, y: 320 },
+            { text: 'PARENT LIVING ENVELOPE', x: 390, y: 220 },
+            { text: 'PRIVATE OFFICE/STUDY', x: 400, y: 395 }
+          ]
+        },
+        layout3D: { isometricRooms: [] }
+      }
+    };
+  }
+
   // Fallback / standard options for HDB 4 or 5 Room
   const is5Room = presetId === 'hdb-5-room';
   const sqPrice = is5Room ? 1.25 : 1.1;

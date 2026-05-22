@@ -480,30 +480,34 @@ Licensed building and design specifications ready for local contractor execution
               { num: 3, label: 'Configure' },
               { num: 4, label: 'Review Options' },
               { num: 5, label: 'Detailed Specs' }
-            ].map((s) => (
-              <button
-                key={s.num}
-                onClick={() => {
-                  // Only allow jumping back, or progress if layouts exist
-                  if (s.num < currentStep || (s.num === 4 && optionA) || (s.num === 5 && selectedOption)) {
-                    setCurrentStep(s.num);
-                  }
-                }}
-                disabled={s.num > currentStep && !optionA}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-all duration-200 flex items-center gap-1.5 ${
-                  currentStep === s.num
-                    ? 'bg-blue-50 text-blue-950 border border-blue-200 shadow-sm'
-                    : 'text-stone-550 hover:bg-stone-100 disabled:opacity-45'
-                }`}
-              >
-                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                  currentStep === s.num ? 'bg-blue-800 text-white' : 'bg-stone-200 text-stone-600'
-                }`}>
-                  {s.num}
-                </span>
-                {s.label}
-              </button>
-            ))}
+            ].map((s) => {
+              const isActiveAndClickable = s.num <= 3 || (s.num === 4 && optionA) || (s.num === 5 && selectedOption);
+              return (
+                <button
+                  key={s.num}
+                  onClick={() => {
+                    if (isActiveAndClickable) {
+                      setCurrentStep(s.num);
+                    }
+                  }}
+                  disabled={!isActiveAndClickable}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-all duration-205 flex items-center gap-1.5 cursor-pointer ${
+                    currentStep === s.num
+                      ? 'bg-blue-55 text-blue-955 border border-blue-200 shadow-sm'
+                      : isActiveAndClickable
+                      ? 'text-stone-750 hover:bg-stone-100'
+                      : 'text-stone-400 opacity-45 cursor-not-allowed'
+                  }`}
+                >
+                  <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
+                    currentStep === s.num ? 'bg-blue-800 text-white' : 'bg-stone-200 text-stone-600'
+                  }`}>
+                    {s.num}
+                  </span>
+                  {s.label}
+                </button>
+              );
+            })}
           </nav>
 
           <div className="flex items-center gap-2">
@@ -685,25 +689,43 @@ Licensed building and design specifications ready for local contractor execution
                   { step: 'STEP 3', title: 'Set Constraints', desc: 'Identify your budget, space prioritization, and toggle dynamic Fengshui filters.', icon: Sliders, bg: 'bg-cyan-50 text-cyan-800 border-cyan-100' },
                   { step: 'STEP 4', title: 'View 2 Options', desc: 'Compare Open Flow and Max Storage layouts under an interactive 2D/3D toggle.', icon: Layout, bg: 'bg-purple-50 text-purple-800 border-purple-100' },
                   { step: 'STEP 5', title: 'Select & Consult', desc: 'Receive complete specs breakdowns and connect with HDB-registered construction pros.', icon: Eye, bg: 'bg-stone-50 text-stone-800 border-stone-200' },
-                ].map((wf, idx) => (
-                  <div key={idx} className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm relative flex flex-col gap-3">
-                    <span className="text-[10px] font-mono font-bold text-stone-400 block tracking-widest">{wf.step}</span>
-                    <div className="flex items-center gap-2">
-                      <div className={`p-2 rounded-lg border ${wf.bg}`}>
-                        <wf.icon className="w-4 h-4" />
+                ].map((wf, idx) => {
+                  const stepNum = idx + 1;
+                  const canNavigate = stepNum <= 3 || (stepNum === 4 && optionA) || (stepNum === 5 && selectedOption);
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        if (canNavigate) {
+                          setCurrentStep(stepNum);
+                        }
+                      }}
+                      disabled={!canNavigate}
+                      className={`text-left bg-white p-5 rounded-2xl border relative flex flex-col gap-3 transition-all ${
+                        canNavigate
+                          ? 'border-stone-200 hover:border-blue-600 hover:shadow-md cursor-pointer'
+                          : 'border-stone-150 opacity-50 cursor-not-allowed'
+                      }`}
+                    >
+                      <span className="text-[10px] font-mono font-bold text-stone-400 block tracking-widest">{wf.step}</span>
+                      <div className="flex items-center gap-2">
+                        <div className={`p-2 rounded-lg border ${wf.bg}`}>
+                          <wf.icon className="w-4 h-4" />
+                        </div>
+                        <span className="font-display font-bold text-sm text-stone-900">{wf.title}</span>
                       </div>
-                      <span className="font-display font-bold text-sm text-stone-900">{wf.title}</span>
-                    </div>
-                    <p className="text-stone-500 text-xs leading-relaxed mt-1">
-                      {wf.desc}
-                    </p>
-                    {idx < 4 && (
-                      <div className="hidden md:block absolute -right-3 top-1/2 -translate-y-1/2 z-10 text-stone-350">
-                        <ChevronRight className="w-4 h-4" />
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      <p className="text-stone-505 text-xs leading-relaxed mt-1">
+                        {wf.desc}
+                      </p>
+                      {idx < 4 && (
+                        <div className="hidden md:block absolute -right-3 top-1/2 -translate-y-1/2 z-10 text-stone-350">
+                          <ChevronRight className="w-4 h-4" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -945,10 +967,18 @@ Licensed building and design specifications ready for local contractor execution
                 </div>
               </div>
 
-              <div className="pt-2 flex justify-end">
+              <div className="pt-2 flex justify-between items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(1)}
+                  className="bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs px-5 py-3 rounded-xl font-display font-semibold border border-stone-200 flex items-center gap-1.5 transition-all duration-200 cursor-pointer"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Back to Discover</span>
+                </button>
                 <button
                   onClick={() => setCurrentStep(3)}
-                  className="bg-blue-800 hover:bg-blue-900 text-white text-xs px-5 py-3 rounded-xl font-display font-semibold shadow-md flex items-center gap-1.5 transition-colors duration-250"
+                  className="bg-blue-800 hover:bg-blue-900 text-white text-xs px-5 py-3 rounded-xl font-display font-semibold shadow-md flex items-center gap-1.5 transition-colors duration-250 cursor-pointer"
                 >
                   <span>Configure Design Constraints</span>
                   <ArrowRight className="w-4 h-4" />
@@ -1194,8 +1224,16 @@ Licensed building and design specifications ready for local contractor execution
                   />
                 </div>
 
-                {/* Trigger button */}
-                <div className="flex justify-end pt-2">
+                {/* Trigger button with back arrow */}
+                <div className="flex justify-between items-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(2)}
+                    className="bg-stone-100 hover:bg-stone-200 text-stone-850 text-xs px-5 py-3 rounded-xl font-display font-semibold border border-stone-200 flex items-center gap-1.5 transition-all duration-200 cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    <span>Back to Floor Plan</span>
+                  </button>
                   <button
                     onClick={triggerRenovationGenerator}
                     className="bg-blue-800 hover:bg-blue-900 text-white font-display text-xs font-bold px-8 py-4 rounded-xl shadow-lg hover:shadow-blue-900/15 select-none transition-all duration-350 transform flex items-center gap-2 cursor-pointer"
@@ -1548,20 +1586,59 @@ Licensed building and design specifications ready for local contractor execution
           <div className="space-y-8 animate-fade-in">
             
             {/* Nav path detail */}
-            <div className="flex items-center justify-between border-b border-stone-200 pb-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between border-b border-stone-200 pb-4">
               <button
                 onClick={() => setCurrentStep(4)}
-                className="bg-stone-100 hover:bg-stone-200 text-stone-800 font-display text-xs font-semibold px-4 py-2 rounded-xl border border-stone-200 flex items-center gap-1.5 transition-colors duration-200"
+                className="bg-stone-100 hover:bg-stone-200 text-stone-800 font-display text-xs font-semibold px-4 py-2 rounded-xl border border-stone-200 flex items-center gap-1.5 transition-colors duration-200 self-start cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4" />
                 <span>Return to Overview Compare</span>
               </button>
 
-              <div className="flex items-center gap-1.5">
-                <span className="text-stone-400 font-mono text-[10px] font-bold">ACTIVE CAPTURED:</span>
-                <span className="bg-blue-800 text-white font-display text-xs font-bold px-3 py-1 rounded-full uppercase">
-                  {selectedOption.name}
-                </span>
+              <div className="flex items-center gap-3 self-end sm:self-auto">
+                {/* Dynamic Forward/Backward Arrows for layout switching */}
+                {optionA && optionB && (
+                  <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl border border-stone-200 text-xs shadow-inner">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (selectedOption === optionA && optionB) {
+                          setSelectedOption(optionB);
+                        } else if (selectedOption === optionB && optionA) {
+                          setSelectedOption(optionA);
+                        }
+                      }}
+                      className="p-1.5 rounded-lg bg-white hover:bg-stone-250 border border-stone-150 text-stone-750 hover:text-blue-800 transition-all flex items-center gap-1 cursor-pointer font-bold text-[10px]"
+                      title="Switch to other scheme (Back)"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                      <span>Prev</span>
+                    </button>
+                    <span className="px-1.5 font-mono text-[9px] font-bold text-stone-400">SCHEME</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (selectedOption === optionA && optionB) {
+                          setSelectedOption(optionB);
+                        } else if (selectedOption === optionB && optionA) {
+                          setSelectedOption(optionA);
+                        }
+                      }}
+                      className="p-1.5 rounded-lg bg-white hover:bg-stone-250 border border-stone-150 text-stone-750 hover:text-blue-800 transition-all flex items-center gap-1 cursor-pointer font-bold text-[10px]"
+                      title="Switch to other scheme (Forward)"
+                    >
+                      <span>Next</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-stone-400 font-mono font-bold hidden md:inline">ACTIVE:</span>
+                  <span className="bg-blue-800 text-white font-display text-xs font-bold px-3 py-1 rounded-full uppercase shadow-sm">
+                    {selectedOption.name}
+                  </span>
+                </div>
               </div>
             </div>
 

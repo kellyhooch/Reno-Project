@@ -361,10 +361,27 @@ try {
 // Get all comments with live sync
 app.get('/api/comments', async (req, res) => {
   try {
-    await syncCommentsFromSupabase();
+    if (!isCommentsTableReady && supabase) {
+      // Periodic check inside the API call to detect when user runs the schema migrate script
+      const { error } = await supabase.from('comments').select('id').limit(1);
+      if (!error) {
+        console.log("Supabase 'comments' table detected on-the-fly! Activating and syncing...");
+        await initSupabaseComments();
+      }
+    } else {
+      await syncCommentsFromSupabase();
+    }
   } catch (err) {}
   const comments = readComments();
-  res.json({ success: true, comments });
+  res.json({ 
+    success: true, 
+    comments,
+    dbStatus: {
+      isConfigured: isSupabaseConfigured,
+      isCommentsTableReady,
+      supabaseUrl: isSupabaseConfigured ? supabaseUrl : null
+    }
+  });
 });
 
 // Add a comment

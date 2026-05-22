@@ -147,6 +147,18 @@ export default function App() {
 
   // Disqus vs Interactive Comment Board State
   const [forumMode, setForumMode] = useState<'interactive' | 'disqus'>('interactive');
+  
+  // Database status tracking
+  const [dbStatus, setDbStatus] = useState<{
+    isConfigured: boolean;
+    isCommentsTableReady: boolean;
+    supabaseUrl: string | null;
+  }>({
+    isConfigured: false,
+    isCommentsTableReady: false,
+    supabaseUrl: null
+  });
+
   const [localComments, setLocalComments] = useState<any[]>(() => {
     const saved = localStorage.getItem('sg_reno_planner_comments');
     const savedOwn = localStorage.getItem('sg_reno_planner_own_comments');
@@ -225,6 +237,10 @@ export default function App() {
             const merged = mergeComments(data.comments, ownList);
             setLocalComments(merged);
             localStorage.setItem('sg_reno_planner_comments', JSON.stringify(merged));
+            
+            if (data.dbStatus) {
+              setDbStatus(data.dbStatus);
+            }
           }
         }
       } catch (err) {
@@ -2898,6 +2914,65 @@ Licensed building and design specifications ready for local contractor execution
           {/* Interactive Live Comment Board */}
           {forumMode === 'interactive' && (
             <div className="space-y-6">
+              {/* Dynamic Database Readiness/Setup Indicator */}
+              {!dbStatus.isCommentsTableReady ? (
+                <div className="bg-amber-50 border border-amber-200 text-amber-900 text-[11px] sm:text-xs p-4 rounded-xl leading-relaxed space-y-2.5 shadow-sm">
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle className="w-4.5 h-4.5 text-amber-700 shrink-0 mt-0.5 animate-bounce" />
+                    <div>
+                      <span className="font-bold text-amber-950">Supabase Table Sync Standby:</span> Comments you write are temporarily stored in your local session, but <span className="underline font-semibold">other visitors won't see them</span> because the <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[10px]">comments</code> table does not exist in your Supabase database.
+                      <p className="text-stone-605 text-[11px] mt-1">
+                        In a serverless environment like Cloud Run, instances scale down to zero or scale out across stateless nodes, meaning local memory data is erased. A persistent database table is required for visitors to see your submissions.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="bg-white/85 border border-amber-100 p-3.5 rounded-lg space-y-2.5">
+                    <p className="font-bold text-[11px] text-amber-950">How to activate global visitor sync in 10 seconds:</p>
+                    <ol className="list-decimal pl-4 space-y-1.5 text-[11px] text-stone-700">
+                      <li>Log into your Supabase Dashboard (<a href="https://supabase.com" target="_blank" rel="noreferrer" className="underline font-bold text-amber-950 hover:text-amber-805">supabase.com</a>)</li>
+                      <li>Go to the <span className="font-semibold">SQL Editor</span> and click <span className="font-semibold">New Query</span></li>
+                      <li>Copy the SQL script inside the <code className="bg-stone-100 px-1 py-0.5 rounded font-mono text-[10px]">supabase-schema.sql</code> file (located in your project's root folder)</li>
+                      <li>Paste the query and click <span className="font-semibold">Run</span>. Once created, this warning will disappear instantly!</li>
+                    </ol>
+                    <details className="mt-2.5 bg-stone-900 text-stone-200 rounded-lg overflow-hidden border border-stone-880">
+                      <summary className="px-3 py-2 font-mono text-[10px] cursor-pointer bg-stone-950 hover:bg-stone-900 select-none text-stone-300 flex items-center justify-between">
+                        <span>📋 View SQL Schema Script to Copy</span>
+                        <span className="text-[9px] text-stone-500 font-mono">(Click to expand)</span>
+                      </summary>
+                      <pre className="p-3 text-[10px] font-mono overflow-x-auto text-emerald-400 select-all max-h-48 leading-relaxed">
+{`-- Create the comments table
+CREATE TABLE IF NOT EXISTS public.comments (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    role TEXT DEFAULT '🏡 Homeowner',
+    text TEXT NOT NULL,
+    likes INTEGER DEFAULT 0,
+    timestamp TEXT,
+    replies JSONB DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Enable Real-time listener
+ALTER TABLE public.comments REPLICA IDENTITY FULL;
+alter publication supabase_realtime add table public.comments;
+
+-- Setup Row Level Security (RLS) policies
+ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow public read access to comments" ON public.comments FOR SELECT USING (true);
+CREATE POLICY "Allow public all access" ON public.comments FOR ALL USING (true) WITH CHECK (true);`}
+                      </pre>
+                    </details>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-emerald-50/70 border border-emerald-200 text-emerald-900 text-[10px] sm:text-xs p-3.5 rounded-xl leading-relaxed flex items-start gap-2.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0 animate-ping"></div>
+                  <div>
+                    <span className="font-bold">Supabase Global Sync Active:</span> Comments and layout suggestions are fully synchronized in real-time with Google Cloud storage services. Your posts are visible globally to all Singapore renovation community members!
+                  </div>
+                </div>
+              )}
+
               {/* Alert Note about sandbox typing limitations */}
               <div className="bg-blue-50/70 border border-blue-100 text-blue-900 text-[10px] sm:text-xs p-3.5 rounded-xl leading-relaxed flex items-start gap-2.5">
                 <Sparkles className="w-4 h-4 text-blue-700 shrink-0 mt-0.5 animate-pulse" />

@@ -152,10 +152,12 @@ export default function App() {
   const [dbStatus, setDbStatus] = useState<{
     isConfigured: boolean;
     isCommentsTableReady: boolean;
+    hasCommentsPermissionIssue: boolean;
     supabaseUrl: string | null;
   }>({
     isConfigured: false,
     isCommentsTableReady: false,
+    hasCommentsPermissionIssue: false,
     supabaseUrl: null
   });
 
@@ -2915,7 +2917,37 @@ Licensed building and design specifications ready for local contractor execution
           {forumMode === 'interactive' && (
             <div className="space-y-6">
               {/* Dynamic Database Readiness/Setup Indicator */}
-              {!dbStatus.isCommentsTableReady ? (
+              {dbStatus.hasCommentsPermissionIssue ? (
+                <div className="bg-red-50 border border-red-200 text-red-950 text-[11px] sm:text-xs p-4 rounded-xl leading-relaxed space-y-2.5 shadow-sm">
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle className="w-4.5 h-4.5 text-red-750 shrink-0 mt-0.5 animate-pulse" />
+                    <div>
+                      <span className="font-bold text-red-955">Supabase Table Access Denied (PostgreSQL Error 42501):</span>
+                      <p className="mt-1 text-red-900 leading-normal">
+                        Your <code className="bg-red-100 px-1 py-0.5 rounded font-mono text-[10px] text-red-800">comments</code> table already exists in Supabase, but visitors still cannot see your comments because <span className="font-semibold underline">permission is denied for the public 'anon' API role</span>!
+                      </p>
+                    </div>
+                  </div>
+                  <div className="bg-white/85 border border-red-100 p-3.5 rounded-lg space-y-2.5">
+                    <p className="font-bold text-[11px] text-red-950">How to fix this in 10 seconds:</p>
+                    <ol className="list-decimal pl-4 space-y-1.5 text-[11px] text-stone-700">
+                      <li>Log into your Supabase Dashboard (<a href="https://supabase.com" target="_blank" rel="noreferrer" className="underline font-bold text-red-950 hover:text-red-800">supabase.com</a>)</li>
+                      <li>Go to the <span className="font-semibold">SQL Editor</span> and click <span className="font-semibold">New Query</span></li>
+                      <li>Copy and paste the short query below to grant public access to the tables:</li>
+                    </ol>
+                    <pre className="p-3 bg-stone-900 text-emerald-400 text-[10px] font-mono rounded overflow-x-auto select-all leading-relaxed font-semibold">
+{`GRANT ALL ON public.comments TO anon;
+GRANT ALL ON public.comments TO authenticated;
+GRANT ALL ON public.comments TO service_role;
+
+GRANT ALL ON public.entries TO anon;
+GRANT ALL ON public.entries TO authenticated;
+GRANT ALL ON public.entries TO service_role;`}
+                    </pre>
+                    <p className="text-[10px] text-stone-500 italic mt-1">Once you click Run in your Supabase Dashboard, this permission error will disappear instantly!</p>
+                  </div>
+                </div>
+              ) : !dbStatus.isCommentsTableReady ? (
                 <div className="bg-amber-50 border border-amber-200 text-amber-900 text-[11px] sm:text-xs p-4 rounded-xl leading-relaxed space-y-2.5 shadow-sm">
                   <div className="flex items-start gap-2.5">
                     <AlertTriangle className="w-4.5 h-4.5 text-amber-700 shrink-0 mt-0.5 animate-bounce" />
@@ -2959,7 +2991,12 @@ alter publication supabase_realtime add table public.comments;
 -- Setup Row Level Security (RLS) policies
 ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow public read access to comments" ON public.comments FOR SELECT USING (true);
-CREATE POLICY "Allow public all access" ON public.comments FOR ALL USING (true) WITH CHECK (true);`}
+CREATE POLICY "Allow public all access" ON public.comments FOR ALL USING (true) WITH CHECK (true);
+
+-- Grant privileges to standard roles
+GRANT ALL ON public.comments TO anon;
+GRANT ALL ON public.comments TO authenticated;
+GRANT ALL ON public.comments TO service_role;`}
                       </pre>
                     </details>
                   </div>

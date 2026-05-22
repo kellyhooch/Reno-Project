@@ -52,3 +52,18 @@ CREATE POLICY "Allow public read access to entries" ON public.entries FOR SELECT
 -- Allow anyone to insert/upsert
 CREATE POLICY "Allow public write access to comments" ON public.comments FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public write access to entries" ON public.entries FOR ALL USING (true) WITH CHECK (true);
+
+-- ====================================================================
+-- 4. CRITICAL: Grant table permissions to standard Supabase API roles
+-- ====================================================================
+-- In many Supabase setups, you must explicitly grant table permissions to the API role
+-- to resolve PostgreSQL Error 42501 (permission denied for table). Paste and run:
+
+GRANT ALL ON public.comments TO anon;
+GRANT ALL ON public.comments TO authenticated;
+GRANT ALL ON public.comments TO service_role;
+
+GRANT ALL ON public.entries TO anon;
+GRANT ALL ON public.entries TO authenticated;
+GRANT ALL ON public.entries TO service_role;
+

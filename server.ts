@@ -225,6 +225,7 @@ const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey && supabaseUrl.st
 
 const supabase = isSupabaseConfigured ? createClient(supabaseUrl, supabaseAnonKey) : null;
 let isCommentsTableReady = false;
+let hasCommentsPermissionIssue = false;
 
 // Pull live comments from Supabase if active
 async function syncCommentsFromSupabase() {
@@ -294,6 +295,7 @@ async function initSupabaseComments() {
     const { error } = await supabase.from('comments').select('id').limit(1);
     if (!error) {
       isCommentsTableReady = true;
+      hasCommentsPermissionIssue = false;
       console.log("Supabase 'comments' table is live and listening!");
       
       // Auto seed if database is empty on start
@@ -314,7 +316,13 @@ async function initSupabaseComments() {
       }
       await syncCommentsFromSupabase();
     } else {
-      console.log("Supabase 'comments' table not found on database. Sync will fall back to local/memory comments until the table is created in Supabase Dashboard.");
+      if (error.code === '42501' || error.message?.includes('permission denied')) {
+        hasCommentsPermissionIssue = true;
+        console.warn("Supabase 'comments' table exists, but permission was DENIED. SQL GRANT permissions required.");
+      } else {
+        hasCommentsPermissionIssue = false;
+      }
+      console.log("Supabase 'comments' table check failed:", error.message, error.code);
     }
   } catch (err: any) {
     console.warn("Error testing Supabase database tables configuration on boot:", err.message);
@@ -366,7 +374,14 @@ app.get('/api/comments', async (req, res) => {
       const { error } = await supabase.from('comments').select('id').limit(1);
       if (!error) {
         console.log("Supabase 'comments' table detected on-the-fly! Activating and syncing...");
+        hasCommentsPermissionIssue = false;
         await initSupabaseComments();
+      } else {
+        if (error.code === '42501' || error.message?.includes('permission denied')) {
+          hasCommentsPermissionIssue = true;
+        } else {
+          hasCommentsPermissionIssue = false;
+        }
       }
     } else {
       await syncCommentsFromSupabase();
@@ -379,6 +394,7 @@ app.get('/api/comments', async (req, res) => {
     dbStatus: {
       isConfigured: isSupabaseConfigured,
       isCommentsTableReady,
+      hasCommentsPermissionIssue,
       supabaseUrl: isSupabaseConfigured ? supabaseUrl : null
     }
   });

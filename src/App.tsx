@@ -38,7 +38,50 @@ import { RenovationConstraints, LayoutOption, PresetPlan, Furniture } from './ty
 import FloorPlanCanvas from './components/FloorPlanCanvas';
 import IsometricRenderer from './components/IsometricRenderer';
 import { supabase } from './lib/supabase';
-import { DiscussionEmbed } from 'disqus-react';
+// React 19 safe Disqus embed
+function SafeDiscussionEmbed({ shortname, config }: { shortname: string; config: { url: string; identifier: string; title: string; language?: string } }) {
+  React.useEffect(() => {
+    // Set global disqus_config
+    (window as any).disqus_config = function (this: any) {
+      this.page.url = config.url;
+      this.page.identifier = config.identifier;
+      this.page.title = config.title;
+      if (config.language) {
+        this.language = config.language;
+      }
+    };
+
+    // Load Disqus script safely without duplicate rendering bugs
+    const existingScript = document.querySelector(`script[src*="disqus.com/embed.js"]`);
+    if (!existingScript) {
+      const d = document;
+      const s = d.createElement('script');
+      s.src = `https://${shortname}.disqus.com/embed.js`;
+      s.setAttribute('data-timestamp', String(+new Date()));
+      (d.head || d.body).appendChild(s);
+    } else {
+      if ((window as any).DISQUS) {
+        try {
+          (window as any).DISQUS.reset({
+            reload: true,
+            config: function (this: any) {
+              this.page.url = config.url;
+              this.page.identifier = config.identifier;
+              this.page.title = config.title;
+              if (config.language) {
+                this.language = config.language;
+              }
+            }
+          });
+        } catch (e) {
+          console.warn("Disqus reset skipped:", e);
+        }
+      }
+    }
+  }, [shortname, config.url, config.identifier, config.title, config.language]);
+
+  return <div id="disqus_thread" className="w-full min-h-[250px]" />;
+}
 
 // Helper for property type human descriptions
 const getPropertyLabel = (type: string) => {
@@ -2509,7 +2552,7 @@ Licensed building and design specifications ready for local contractor execution
           </div>
           
           <div className="min-h-[250px]">
-            <DiscussionEmbed
+            <SafeDiscussionEmbed
               shortname="reno-project-kel"
               config={{
                 url: typeof window !== 'undefined' ? window.location.href : 'https://sg-renoplanner.co',

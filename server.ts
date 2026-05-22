@@ -17,15 +17,26 @@ const PORT = 3000;
 // Middleware to parse JSON payloads with high limit for images
 app.use(express.json({ limit: '15mb' }));
 
-// Initialize Gemini Client
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-  httpOptions: {
-    headers: {
-      'User-Agent': 'aistudio-build',
-    },
-  },
-});
+// Initialize Gemini Client lazily to prevent crashing on server startup
+let aiClient: GoogleGenAI | null = null;
+
+function getGeminiClient(): GoogleGenAI {
+  if (!aiClient) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error('GEMINI_API_KEY environment variable is required. Please set it in Settings.');
+    }
+    aiClient = new GoogleGenAI({
+      apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        },
+      },
+    });
+  }
+  return aiClient;
+}
 
 // Helper for property type human descriptions
 const getPropertyLabel = (type: string) => {
@@ -88,7 +99,7 @@ Your response must strictly conform to the expected JSON schema. Do not include 
       parts.push({ text: "Use the standard Singapore floor plan layout templates to formulate recommendations." });
     }
 
-    const response = await ai.models.generateContent({
+    const response = await getGeminiClient().models.generateContent({
       model: 'gemini-3.5-flash',
       contents: parts,
       config: {

@@ -2890,7 +2890,7 @@ Licensed building and design specifications ready for local contractor execution
                         <div className="flex items-center gap-2.5">
                           {/* Round Avatar initials badge */}
                           <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-xs">
-                            {comment.name.substring(0, 1).toUpperCase()}
+                            {((comment && comment.name) || 'S').substring(0, 1).toUpperCase()}
                           </div>
                           <div>
                             <div className="flex items-center gap-1.5 flex-wrap">
@@ -2975,7 +2975,7 @@ Licensed building and design specifications ready for local contractor execution
                             <div key={reply.id} className="bg-stone-50/60 p-3 rounded-lg border border-stone-100 space-y-1.5">
                               <div className="flex items-center gap-2">
                                 <div className="w-6 h-6 rounded-full bg-stone-100 text-stone-600 flex items-center justify-center font-bold text-[10px]">
-                                  {reply.name.substring(0, 1).toUpperCase()}
+                                  {((reply && reply.name) || 'S').substring(0, 1).toUpperCase()}
                                 </div>
                                 <div>
                                   <div className="flex items-center gap-1 text-[10px]">

@@ -218,23 +218,40 @@ const DEFAULT_COMMENTS = [
 ];
 
 function readComments(): any[] {
-  try {
-    if (fs.existsSync(COMMENTS_FILE)) {
-      const data = fs.readFileSync(COMMENTS_FILE, 'utf8');
-      return JSON.parse(data);
-    }
-  } catch (err) {
-    console.error("Error reading comments file, using defaults:", err);
-  }
-  return DEFAULT_COMMENTS;
+  return memoryComments;
 }
 
 function writeComments(comments: any[]) {
+  memoryComments = comments;
   try {
-    fs.writeFileSync(COMMENTS_FILE, JSON.stringify(comments, null, 2), 'utf8');
-  } catch (err) {
-    console.error("Error writing comments file:", err);
+    fs.writeFile(COMMENTS_FILE, JSON.stringify(comments, null, 2), 'utf8', (err) => {
+      if (err) {
+        console.error("Error writing comments JSON file:", err.message);
+      }
+    });
+  } catch (err: any) {
+    console.error("Async write attempt error:", err.message);
   }
+}
+
+// In-Memory cache initialized on server load
+let memoryComments: any[] = [];
+
+try {
+  if (fs.existsSync(COMMENTS_FILE)) {
+    const data = fs.readFileSync(COMMENTS_FILE, 'utf8');
+    const parsed = JSON.parse(data);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      memoryComments = parsed;
+    } else {
+      memoryComments = JSON.parse(JSON.stringify(DEFAULT_COMMENTS));
+    }
+  } else {
+    memoryComments = JSON.parse(JSON.stringify(DEFAULT_COMMENTS));
+  }
+} catch (e) {
+  console.warn("Error reading comments file on startup. Using default seed array.", e);
+  memoryComments = JSON.parse(JSON.stringify(DEFAULT_COMMENTS));
 }
 
 // Get all comments

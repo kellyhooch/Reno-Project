@@ -37,6 +37,7 @@ import { getOptionsForPreset } from './mockLayouts';
 import { RenovationConstraints, LayoutOption, PresetPlan, Furniture } from './types';
 import FloorPlanCanvas from './components/FloorPlanCanvas';
 import IsometricRenderer from './components/IsometricRenderer';
+import { supabase } from './lib/supabase';
 
 // Helper for property type human descriptions
 const getPropertyLabel = (type: string) => {
@@ -162,27 +163,108 @@ export default function App() {
     }
   }, [selectedPresetId]);
 
-  // Load saved projects on cold start
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('sg_renoplanner_projects');
-      if (stored) {
-        setSavedProjects(JSON.parse(stored));
+  // Helper to map DB row into standard React state project model
+  const mapDbRowToProject = (row: any) => {
+    let optionDataParsed = null;
+    const rawOptionData = row.optionData !== undefined ? row.optionData : row.option_data;
+    if (rawOptionData) {
+      if (typeof rawOptionData === 'string') {
+        try {
+          optionDataParsed = JSON.parse(rawOptionData);
+        } catch {
+          optionDataParsed = rawOptionData;
+        }
+      } else {
+        optionDataParsed = rawOptionData;
       }
-    } catch (e) {
-      console.error("Failed to parse stored projects", e);
     }
-  }, []);
 
-  // Sync saved list
-  const saveSavedProjectsToLocal = (updated: any) => {
-    setSavedProjects(updated);
-    try {
-      localStorage.setItem('sg_renoplanner_projects', JSON.stringify(updated));
-    } catch (e) {
-      console.error(e);
-    }
+    return {
+      id: row.id != null ? String(row.id) : '',
+      timestamp: row.timestamp || row.created_at || new Date().toISOString(),
+      propertyType: row.propertyType || row.property_type || 'hdb_4',
+      budget: row.budget != null ? Number(row.budget) : 55000,
+      optionSelected: row.optionSelected || row.option_selected || 'Option A',
+      optionData: optionDataParsed,
+      presetId: row.presetId || row.preset_id || 'hdb-4-room'
+    };
   };
+
+  // Load saved projects from Supabase and subscribe to live changes
+  useEffect(() => {
+    const fetchSupabaseEntries = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('entries')
+          .select('*');
+        
+        if (error) {
+          console.error("Failed to load entries from Supabase:", error);
+          return;
+        }
+        
+        if (data) {
+          const mapped = data.map((row: any) => mapDbRowToProject(row));
+          // Sort descending by numeric ID or timestamp
+          mapped.sort((a, b) => {
+            const timeA = new Date(a.timestamp).getTime();
+            const timeB = new Date(b.timestamp).getTime();
+            if (isNaN(timeA) || isNaN(timeB)) {
+              return b.id.localeCompare(a.id);
+            }
+            return timeB - timeA;
+          });
+          setSavedProjects(mapped);
+        }
+      } catch (err) {
+        console.error("Error fetching from Supabase:", err);
+      }
+    };
+
+    fetchSupabaseEntries();
+
+    // Live subscription to "entries" table so UI updates in real-time when other users post
+    const channel = supabase
+      .channel('entries-realtime-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'entries' },
+        (payload) => {
+          console.log('Realtime change observed:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            const newProj = mapDbRowToProject(payload.new);
+            setSavedProjects((prev) => {
+              if (prev.some(p => p.id === newProj.id)) return prev;
+              const updated = [newProj, ...prev];
+              return updated.sort((a, b) => {
+                const timeA = new Date(a.timestamp).getTime();
+                const timeB = new Date(b.timestamp).getTime();
+                if (isNaN(timeA) || isNaN(timeB)) {
+                  return b.id.localeCompare(a.id);
+                }
+                return timeB - timeA;
+              });
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedProj = mapDbRowToProject(payload.new);
+            setSavedProjects((prev) => {
+              return prev.map(p => p.id === updatedProj.id ? updatedProj : p);
+            });
+          } else if (payload.eventType === 'DELETE') {
+            const deletedId = String(payload.old?.id);
+            setSavedProjects((prev) => {
+              return prev.filter(p => p.id !== deletedId);
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   // Preset Slider Adjusters
   const alignBudgetPreset = (presetType: 'hdb3' | 'hdb4' | 'hdb5' | 'condo') => {
@@ -334,10 +416,11 @@ export default function App() {
     }
   };
 
-  // Design Local Savers
-  const saveSelectedDesign = (option: LayoutOption, nameSelected: 'Option A' | 'Option B') => {
+  // Design Remote Savers via Supabase Client
+  const saveSelectedDesign = async (option: LayoutOption, nameSelected: 'Option A' | 'Option B') => {
+    const rawId = "pro-" + Date.now();
     const newProject = {
-      id: "pro-" + Date.now(),
+      id: rawId,
       timestamp: new Date().toLocaleDateString('en-SG', {
         day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
       }),
@@ -348,16 +431,95 @@ export default function App() {
       presetId: selectedPresetId
     };
 
-    const updated = [newProject, ...savedProjects];
-    saveSavedProjectsToLocal(updated);
-    
-    setSaveSuccessMessage(`Successfully saved ${option.name} to your local projects board!`);
-    setTimeout(() => setSaveSuccessMessage(null), 4000);
+    try {
+      // Build insertion payload with both casing methods to handle snake_case or camelCase columns safely
+      let payloadToTry: any = {
+        id: newProject.id,
+        timestamp: newProject.timestamp,
+        propertyType: newProject.propertyType,
+        property_type: newProject.propertyType,
+        budget: newProject.budget,
+        optionSelected: newProject.optionSelected,
+        option_selected: newProject.optionSelected,
+        optionData: newProject.optionData,
+        option_data: newProject.optionData,
+        presetId: newProject.presetId,
+        preset_id: newProject.presetId
+      };
+
+      let attempts = 0;
+      let response: any = null;
+
+      while (attempts < 10) {
+        response = await supabase.from('entries').insert([payloadToTry]).select('*');
+        if (!response.error) {
+          break;
+        }
+
+        const error = response.error;
+        console.error(`Supabase insert attempt ${attempts + 1} failed:`, error);
+
+        // Case 1: Undefined column error (Postgres 42703) - dyn-strip unknown columns
+        if (error.code === '42703' && error.message) {
+          const match = error.message.match(/column "([^"]+)"/);
+          if (match && match[1]) {
+            const offendingColumn = match[1];
+            console.warn(`Stripping unknown column '${offendingColumn}' and retrying...`);
+            delete payloadToTry[offendingColumn];
+            attempts++;
+            continue;
+          }
+        }
+
+        // Case 2: ID casting error (Postgres 22P02, converting text 'pro-...' to uuid/int)
+        if (error.code === '22P02' && error.message && error.message.includes('id')) {
+          if (payloadToTry.id) {
+            console.warn("UUID/Number conversion failure on key 'id'. Trying to omit ID for auto-generation...");
+            delete payloadToTry.id;
+            attempts++;
+            continue;
+          }
+        }
+
+        break;
+      }
+
+      if (response && response.error) {
+        throw response.error;
+      }
+
+      setSaveSuccessMessage(`Successfully saved ${option.name} to the shared project board!`);
+      setTimeout(() => setSaveSuccessMessage(null), 4000);
+    } catch (err) {
+      console.error("Failed to save to Supabase:", err);
+      alert("Ah, we couldn't push the layout to the shared Supabase group board. Ensure the database matches the entries schema!");
+    }
   };
 
-  const deleteSavedProject = (id: string) => {
-    const updated = savedProjects.filter(p => p.id !== id);
-    saveSavedProjectsToLocal(updated);
+  const deleteSavedProject = async (id: string) => {
+    try {
+      // Direct delete by matching id
+      const { error } = await supabase
+        .from('entries')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        // Fallback: If id is stored as a bigint/int in Postgres but passed as string, convert it
+        const numericId = Number(id);
+        if (!isNaN(numericId)) {
+          const { error: numericError } = await supabase
+            .from('entries')
+            .delete()
+            .eq('id', numericId);
+          if (numericError) throw numericError;
+        } else {
+          throw error;
+        }
+      }
+    } catch (err) {
+      console.error("Failed to delete from Supabase:", err);
+    }
   };
 
   // Specification Downloader (Payment Protected)
